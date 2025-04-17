@@ -72,9 +72,10 @@ const AnimatedProductRow = ({ title, items }) => {
 
   return (
     <VStack align="start" spacing={6} mb={12} ref={ref} width="100%">
-      <Text fontSize="3xl" fontWeight="bold" color="black">
-        {title}
-      </Text>
+<Text fontSize="3xl" fontWeight="bold" color="black" width="100%" textAlign="center">
+  {title}
+</Text>
+
       <Center width="100%">
         <SimpleGrid 
           columns={{ base: 1, sm: 2, md: 3, lg: 5 }} 
@@ -160,7 +161,7 @@ const AnimatedProductRow = ({ title, items }) => {
 
 const HomePage = () => {
   return (
-    <Box bg="gray.100" px={{ base: 4, md: 8 }} py={8} overflowY="auto" h="calc(100vh - 120px)">
+    <Box bg="white" px={{ base: 4, md: 8 }} py={8} overflowY="auto" h="calc(100vh - 120px)">
       <Flex 
         direction="column" 
         maxW={{ base: "100%", xl: "1800px" }} 
@@ -244,7 +245,7 @@ const HomePage = () => {
         </VStack>
 
         {/* Animated Product Rows - each with independent animation */}
-        <AnimatedProductRow title="New Arrivals" items={products.newArrivals} />
+        <AnimatedProductRow title="New Arrivals"  items={products.newArrivals} />
         <AnimatedProductRow title="Best Sellers" items={products.bestSellers} />
         <AnimatedProductRow title="Switches" items={products.switches} />
       </Flex>

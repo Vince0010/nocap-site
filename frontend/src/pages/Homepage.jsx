@@ -7,17 +7,17 @@ import { useEffect, useRef } from 'react';
 // Placeholder product data
 const products = {
   featuredImages: [
-    { name: 'GMK Laser Keycaps', price: '₱8500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'KBD8X MKIII Keyboard', price: '₱15100.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Zealio Switches', price: '₱6500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'SA Pulse Keycaps', price: '₱7800.00', image: 'https://via.placeholder.com/500x500' },
+    { name: 'GMK Laser Keycaps', price: '₱8500.00', image: 'src/assets/laser-65-2_1500x.png' },
+    { name: 'Margo', price: '₱15100.00', image: 'src/assets/margo.png' },
+    { name: 'PBTFANS Ronin', price: '₱6500.00', image: 'src/assets/ronin.png' },
+    { name: 'Tofu60 2.0', price: '₱7800.00', image: 'src/assets/tofu60.png' },
   ],
   newArrivals: [
-    { name: 'GMK Laser Keycaps', price: '₱8500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'KBD8X MKIII Keyboard', price: '₱15100.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Zealio Switches', price: '₱6500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'SA Pulse Keycaps', price: '₱7800.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'TET Keyboard', price: '₱15000.00', image: 'https://via.placeholder.com/500x500' },
+    { name: 'GMK Laser Keycaps', price: '₱8500.00', image:'src/assets/laser-65-2_1500x.png' },
+    { name: 'Margo', price: '₱15100.00', image: 'src/assets/margo.png' },
+    { name: 'Zealio Switches', price: '₱6500.00', image: 'src/assets/zealios.png' },
+    { name: 'PBTFANS Ronin', price: '₱6500.00', image: 'src/assets/ronin.png' },
+    { name: 'Tofu60 2.0', price: '₱7800.00', image: 'src/assets/tofu60.png' },
   ],
   bestSellers: [
     { name: 'DSA Milkshake Keycaps', price: '₱6500.00', image: 'https://via.placeholder.com/500x500' },
@@ -130,8 +130,8 @@ const AnimatedProductRow = ({ title, items }) => {
                           src={item.image}
                           alt={item.name}
                           style={{ 
-                            width: "80%", 
-                            height: "80%", 
+                            width: "100%", 
+                            height: "100%", 
                             objectFit: "contain",
                             borderRadius: "1rem" // Rounding the actual image
                           }}
@@ -220,7 +220,7 @@ const HomePage = () => {
                             style={{ 
                               width: "90%", 
                               height: "90%", 
-                              objectFit: "contain",
+                              objectFit: "fill",
                               borderRadius: "1rem" // Rounding the actual image
                             }}
                           />

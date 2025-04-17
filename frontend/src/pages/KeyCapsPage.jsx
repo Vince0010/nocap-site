@@ -1,27 +1,57 @@
-import { Box, Flex, SimpleGrid, Text, VStack, Select, Input, Button } from '@chakra-ui/react';
-
-// Placeholder data for keycap sets (replace with database data later)
-const keycapSets = [
-  { name: 'GMK Laser', price: '₱8500.00', image: 'https://via.placeholder.com/280x280' },
-  { name: 'SA Pulse', price: '₱7800.00', image: 'https://via.placeholder.com/280x280' },
-  { name: 'DSA Milkshake', price: '₱6500.00', image: 'https://via.placeholder.com/280x280' },
-  { name: 'Cherry Blossom', price: '₱7200.00', image: 'https://via.placeholder.com/280x280' },
-  // Add more items to test scrolling
-  { name: 'GMK Laser', price: '₱8500.00', image: 'https://via.placeholder.com/280x280' },
-  { name: 'SA Pulse', price: '₱7800.00', image: 'https://via.placeholder.com/280x280' },
-  { name: 'DSA Milkshake', price: '₱6500.00', image: 'https://via.placeholder.com/280x280' },
-  { name: 'Cherry Blossom', price: '₱7200.00', image: 'https://via.placeholder.com/280x280' },
+import {
+  Box,
+  Flex,
+  SimpleGrid,
+  Text,
+  VStack,
+  Select,
+  Input,
+  Button,
+  Center,
+} from "@chakra-ui/react";
+import {
+  AnimatedProductRow,
+  ProductBox,
+} from "../components/ProductComponents";
+// Placeholder data for switches (replace with database data later)
+const keycaps = [
+  {
+    name: "S9000",
+    price: "₱8500.00",
+    image: "src/assets/S9000.png",
+    altImage: "src/assets/altImg/S9000Alt.png",
+  },
+  {
+    name: "Margo",
+    price: "₱15100.00",
+    image: "src/assets/margo.png",
+    altImage: "src/assets/altImg/margoAlt.png",
+  },
+  {
+    name: "Mount Tai HE Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/mounttai.png",
+    altImage: "src/assets/altImg/mounttaiAlt.png",
+  },
+  {
+    name: "Electronic Pet",
+    price: "₱6500.00",
+    image: "src/assets/electronicpet.png",
+    altImage: "src/assets/altImg/electronicpetAlt.png",
+  },
+  {
+    name: "Tofu60 Redux Kit",
+    price: "₱7800.00",
+    image: "src/assets/tofu60.png",
+    altImage: "src/assets/altImg/tofu60Alt.png",
+  },
 ];
 
 const KeyCapsPage = () => {
   return (
-    <Box
-      h="calc(100vh - 120px)"
-      overflowY="auto"
-      bg="gray.100"
-    >
+    <Box h="calc(100vh - 120px)" overflowY="auto" bg="white">
       <Flex
-        direction={{ base: 'column', md: 'row' }}
+        direction={{ base: "column", md: "row" }}
         maxW="1400px"
         mx="auto"
         py={8}
@@ -29,11 +59,13 @@ const KeyCapsPage = () => {
       >
         {/* Sidebar: Filter Panel */}
         <Box
-          w={{ base: '100%', md: '250px' }}
+          w={{ base: "100%", md: "250px" }}
           mb={{ base: 4, md: 0 }}
-          mr={{ md: 4 }}
-          borderRight={{ md: '1px solid' }}
-          borderColor={{ md: 'gray.300' }}
+          position={{ md: "fixed" }}
+          top={{ md: "190px" }}
+          h={{ md: "calc(100vh - 120px)" }}
+          overflowY={{ md: "auto" }}
+          bg="white"
           pr={{ md: 4 }}
         >
           <VStack align="start" spacing={4}>
@@ -47,23 +79,23 @@ const KeyCapsPage = () => {
                 bg="white"
                 color="black"
                 mr={2}
-                _placeholder={{ color: 'gray.500' }}
+                _placeholder={{ color: "gray.500" }}
               />
               <Input
                 placeholder="MAX"
                 bg="white"
                 color="black"
-                _placeholder={{ color: 'gray.500' }}
+                _placeholder={{ color: "gray.500" }}
               />
             </Flex>
             <Button
-              bg="purple.500"
-              color="white"
-              w="100%"
-              _hover={{ bg: 'purple.600' }}
-            >
-              Apply
-            </Button>
+                bg="gray.700"
+                color="white"
+                w="100%"
+                _hover={{ bg: "gray.900" }}
+              >
+                Apply
+              </Button>
 
             {/* Availability Filter */}
             <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
@@ -81,61 +113,15 @@ const KeyCapsPage = () => {
             </Text>
             <Select bg="white" color="black">
               <option value="">Select</option>
-              <option value="gmk">GMK</option>
-              <option value="sa">SA</option>
-              <option value="dsa">DSA</option>
+              <option value="akko">Akko</option>
+              <option value="gateron">Gateron</option>
             </Select>
           </VStack>
         </Box>
 
         {/* Main Content: Product Grid */}
-        <Box flex="1">
-          <Text
-            fontSize="xl"
-            fontWeight="bold"
-            color="black"
-            mb={4}
-            textAlign="center"
-          >
-            KEYCAP SETS
-          </Text>
-          <SimpleGrid
-            columns={{ base: 1, sm: 2, md: 2, lg: 3 }} // Reduced to 3 columns on lg
-            spacing={8}
-          >
-            {keycapSets.map((item, index) => (
-              <VStack key={index} spacing={2} align="center">
-                <Box
-                  bg="white"
-                  borderRadius="md"
-                  overflow="hidden"
-                  textAlign="center"
-                  p={4}
-                  boxShadow="sm"
-                >
-                  <Box
-                    w="280px" // Slightly larger width
-                    h="280px" // Matching height for square
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                    />
-                  </Box>
-                </Box>
-                <Text fontSize="sm" fontWeight="bold" color="black">
-                  {item.name}
-                </Text>
-                <Text fontSize="xs" color="black">
-                  {item.price}
-                </Text>
-              </VStack>
-            ))}
-          </SimpleGrid>
+        <Box ml="250px" p={4}>
+          <AnimatedProductRow title="Key Caps" items={keycaps} />
         </Box>
       </Flex>
     </Box>

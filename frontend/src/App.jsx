@@ -4,6 +4,8 @@ import Navbar from './components/Navbar';
 import HomePage from './pages/Homepage';
 import KeyCapsPage from './pages/KeyCapsPage';
 import SwitchesPage from './pages/SwitchesPage';
+import KeyboardPage from './pages/KeyboardPage';
+import OthersPage from './pages/OthersPage';
 
 const navItems = [
   { label: 'Home', href: '/' },
@@ -27,10 +29,10 @@ function App() {
       <Box>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/keyboards" element={<div>Keyboards Page</div>} />
+          <Route path="/keyboards" element={<KeyboardPage/>} />
           <Route path="/switches" element={<SwitchesPage />} />
           <Route path="/keycaps" element={<KeyCapsPage />} />
-          <Route path="/others" element={<div>Others Page</div>} />
+          <Route path="/others" element={<OthersPage />} />
           <Route path="/compare" element={<div>Compare Page</div>} />
           <Route path="*" element={<div>404 - Page Not Found</div>} />
         </Routes>

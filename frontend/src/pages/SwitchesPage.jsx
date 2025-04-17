@@ -1,27 +1,159 @@
-import { Box, Flex, SimpleGrid, Text, VStack, Select, Input, Button } from '@chakra-ui/react';
-
+import {
+  Box,
+  Flex,
+  SimpleGrid,
+  Text,
+  VStack,
+  Select,
+  Input,
+  Button,
+  Center,
+} from "@chakra-ui/react";
+import {
+  AnimatedProductRow,
+  ProductBox,
+} from "../components/ProductComponents";
 // Placeholder data for switches (replace with database data later)
 const switches = [
-  { name: 'Akko Cream Blue Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Yellow Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Black Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Lavender Purple', price: '₱380.00', image: 'https://via.placeholder.com/200' },
-  // Add more items to test scrolling
-  { name: 'Akko Cream Blue Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Yellow Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Black Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Lavender Purple', price: '₱380.00', image: 'https://via.placeholder.com/200' },
+  {
+    name: "Mount Tai HE Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/mounttai.png",
+    altImage: "src/assets/altImg/mounttaiAlt.png",
+  },
+  {
+    name: "Skyline Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/skyline.png",
+    altImage: "src/assets/altImg/skylineAlt.png",
+  },
+  {
+    name: "Cherry Black MX Hyperglide",
+    price: "₱6500.00",
+    image: "src/assets/cherrymxblack.png",
+    altImage: "src/assets/altImg/cherrymxblackAlt.png",
+  },
+  {
+    name: "Skyline Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/skyline.png",
+    altImage: "src/assets/altImg/skylineAlt.png",
+  },
+  {
+    name: "Gateron Magnetic Jade",
+    price: "₱6500.00",
+    image: "src/assets/magneticjade.png",
+    altImage: "src/assets/altImg/magneticjadeAlt.png",
+  },
+  {
+    name: "MMD Princess Linear/Tactile Switches V2",
+    price: "₱6500.00",
+    image: "src/assets/mmdprincess.png",
+    altImage: "src/assets/altImg/mmdprincessAlt.png",
+  },
+  {
+    name: "Mount Tai HE Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/mounttai.png",
+    altImage: "src/assets/altImg/mounttaiAlt.png",
+  },
+  {
+    name: "Cherry Black MX Hyperglide",
+    price: "₱6500.00",
+    image: "src/assets/cherrymxblack.png",
+    altImage: "src/assets/altImg/cherrymxblackAlt.png",
+  },
+  {
+    name: "Skyline Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/skyline.png",
+    altImage: "src/assets/altImg/skylineAlt.png",
+  },
+  {
+    name: "Gateron Magnetic Jade",
+    price: "₱6500.00",
+    image: "src/assets/magneticjade.png",
+    altImage: "src/assets/altImg/magneticjadeAlt.png",
+  },
+  {
+    name: "MMD Princess Linear/Tactile Switches V2",
+    price: "₱6500.00",
+    image: "src/assets/mmdprincess.png",
+    altImage: "src/assets/altImg/mmdprincessAlt.png",
+  },
+  {
+    name: "Mount Tai HE Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/mounttai.png",
+    altImage: "src/assets/altImg/mounttaiAlt.png",
+  },
+  {
+    name: "Skyline Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/skyline.png",
+    altImage: "src/assets/altImg/skylineAlt.png",
+  },
+  {
+    name: "Cherry Black MX Hyperglide",
+    price: "₱6500.00",
+    image: "src/assets/cherrymxblack.png",
+    altImage: "src/assets/altImg/cherrymxblackAlt.png",
+  },
+  {
+    name: "Skyline Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/skyline.png",
+    altImage: "src/assets/altImg/skylineAlt.png",
+  },
+  {
+    name: "Gateron Magnetic Jade",
+    price: "₱6500.00",
+    image: "src/assets/magneticjade.png",
+    altImage: "src/assets/altImg/magneticjadeAlt.png",
+  },
+  {
+    name: "MMD Princess Linear/Tactile Switches V2",
+    price: "₱6500.00",
+    image: "src/assets/mmdprincess.png",
+    altImage: "src/assets/altImg/mmdprincessAlt.png",
+  },
+  {
+    name: "Mount Tai HE Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/mounttai.png",
+    altImage: "src/assets/altImg/mounttaiAlt.png",
+  },
+  {
+    name: "Cherry Black MX Hyperglide",
+    price: "₱6500.00",
+    image: "src/assets/cherrymxblack.png",
+    altImage: "src/assets/altImg/cherrymxblackAlt.png",
+  },
+  {
+    name: "Skyline Magnetic Switches",
+    price: "₱6500.00",
+    image: "src/assets/skyline.png",
+    altImage: "src/assets/altImg/skylineAlt.png",
+  },
+  {
+    name: "Gateron Magnetic Jade",
+    price: "₱6500.00",
+    image: "src/assets/magneticjade.png",
+    altImage: "src/assets/altImg/magneticjadeAlt.png",
+  },
+  {
+    name: "MMD Princess Linear/Tactile Switches V2",
+    price: "₱6500.00",
+    image: "src/assets/mmdprincess.png",
+    altImage: "src/assets/altImg/mmdprincessAlt.png",
+  },
 ];
 
 const SwitchesPage = () => {
   return (
-    <Box
-      h="calc(100vh - 120px)"
-      overflowY="auto"
-      bg="gray.100"
-    >
+    <Box h="calc(100vh - 120px)" overflowY="auto" bg="white">
       <Flex
-        direction={{ base: 'column', md: 'row' }}
+        direction={{ base: "column", md: "row" }}
         maxW="1400px"
         mx="auto"
         py={8}
@@ -29,11 +161,13 @@ const SwitchesPage = () => {
       >
         {/* Sidebar: Filter Panel */}
         <Box
-          w={{ base: '100%', md: '250px' }}
+          w={{ base: "100%", md: "250px" }}
           mb={{ base: 4, md: 0 }}
-          mr={{ md: 4 }}
-          borderRight={{ md: '1px solid' }}
-          borderColor={{ md: 'gray.300' }}
+          position={{ md: "fixed" }}
+          top={{ md: "190px" }}
+          h={{ md: "calc(100vh - 120px)" }}
+          overflowY={{ md: "auto" }}
+          bg="white"
           pr={{ md: 4 }}
         >
           <VStack align="start" spacing={4}>
@@ -47,23 +181,23 @@ const SwitchesPage = () => {
                 bg="white"
                 color="black"
                 mr={2}
-                _placeholder={{ color: 'gray.500' }}
+                _placeholder={{ color: "gray.500" }}
               />
               <Input
                 placeholder="MAX"
                 bg="white"
                 color="black"
-                _placeholder={{ color: 'gray.500' }}
+                _placeholder={{ color: "gray.500" }}
               />
             </Flex>
             <Button
-              bg="purple.500"
-              color="white"
-              w="100%"
-              _hover={{ bg: 'purple.600' }}
-            >
-              Apply
-            </Button>
+                bg="gray.700"
+                color="white"
+                w="100%"
+                _hover={{ bg: "gray.900" }}
+              >
+                Apply
+              </Button>
 
             {/* Availability Filter */}
             <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
@@ -88,53 +222,8 @@ const SwitchesPage = () => {
         </Box>
 
         {/* Main Content: Product Grid */}
-        <Box flex="1">
-          <Text
-            fontSize="xl"
-            fontWeight="bold"
-            color="black"
-            mb={4}
-            textAlign="center"
-          >
-            SWITCHES
-          </Text>
-          <SimpleGrid
-            columns={{ base: 1, sm: 2, md: 3, lg: 4 }}
-            spacing={4}
-          >
-            {switches.map((item, index) => (
-              <VStack key={index} spacing={2} align="center">
-                <Box
-                  bg="white"
-                  borderRadius="md"
-                  overflow="hidden"
-                  textAlign="center"
-                  p={4}
-                  boxShadow="sm"
-                >
-                  <Box
-                    w="100%"
-                    h="200px"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                    />
-                  </Box>
-                </Box>
-                <Text fontSize="sm" fontWeight="bold" color="black">
-                  {item.name}
-                </Text>
-                <Text fontSize="xs" color="black">
-                  {item.price}
-                </Text>
-              </VStack>
-            ))}
-          </SimpleGrid>
+        <Box ml="250px" p={4}>
+          <AnimatedProductRow title="Switches" items={switches} />
         </Box>
       </Flex>
     </Box>

@@ -1,237 +1,235 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/rules-of-hooks */
-import { Box, Flex, SimpleGrid, Text, VStack, Skeleton, Center } from '@chakra-ui/react';
-import { motion, useAnimation } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import {
+  Box,
+  Flex,
+  SimpleGrid,
+  Text,
+  VStack,
+  Skeleton,
+  Center,
+} from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { AnimatedProductRow } from "../components/ProductComponents";
 
-
-// Placeholder product data
+// Placeholder product data with alternate images
 const products = {
   featuredImages: [
-    { name: 'GMK Laser Keycaps', price: '₱8500.00', image: 'src/assets/laser-65-2_1500x.png' },
-    { name: 'Margo', price: '₱15100.00', image: 'src/assets/margof.png' },
-    { name: 'PBTFANS Ronin', price: '₱6500.00', image: 'src/assets/ronin.png' },
-    { name: 'Tofu60 2.0', price: '₱7800.00', image: 'src/assets/tofu60.png' },
+    {
+      name: "GMK Laser Keycaps",
+      price: "₱8500.00",
+      image: "src/assets/laser-65-2_1500x.png",
+    },
+    { name: "Margo", price: "₱15100.00", image: "src/assets/margof.png" },
+    { name: "PBTFANS Ronin", price: "₱6500.00", image: "src/assets/ronin.png" },
+    { name: "Tofu60 Redux Kit", price: "₱7800.00", image: "src/assets/tofu60.png" },
   ],
   newArrivals: [
-    { name: 'S9000', price: '₱8500.00', image:'src/assets/S9000.png' },
-    { name: 'Margo', price: '₱15100.00', image: 'src/assets/margo.png' },
-    { name: 'Mount Tai HE Magnetic Switches', price: '₱6500.00', image: 'src/assets/mounttai.png' },
-    { name: 'Electronic Pet', price: '₱6500.00', image: 'src/assets/electronicpet.png' },
-    { name: 'Tofu60 2.0', price: '₱7800.00', image: 'src/assets/tofu60.png' },
+    {
+      name: "S9000",
+      price: "₱8500.00",
+      image: "src/assets/S9000.png",
+      altImage: "src/assets/altImg/S9000Alt.png",
+    },
+    {
+      name: "Margo",
+      price: "₱15100.00",
+      image: "src/assets/margo.png",
+      altImage: "src/assets/altImg/margoAlt.png",
+    },
+    {
+      name: "Mount Tai HE Magnetic Switches",
+      price: "₱6500.00",
+      image: "src/assets/mounttai.png",
+      altImage: "src/assets/altImg/mounttaiAlt.png",
+    },
+    {
+      name: "Electronic Pet",
+      price: "₱6500.00",
+      image: "src/assets/electronicpet.png",
+      altImage: "src/assets/altImg/electronicpetAlt.png",
+    },
+    {
+      name: "Tofu60 Redux Kit",
+      price: "₱7800.00",
+      image: "src/assets/tofu60.png",
+      altImage: "src/assets/altImg/tofu60Alt.png",
+    },
   ],
   bestSellers: [
-    { name: 'Rainy75 ', price: '₱6500.00', image: 'src/assets/rainy75.png' },
-    { name: 'Retro Rainbow', price: '₱6500.00', image: 'src/assets/retro.png' },
-    { name: 'Magnum65', price: '₱6500.00', image: 'src/assets/magnum65.png' },
-    { name: 'Cherry Black MX Hyperglide', price: '₱6500.00', image: 'src/assets/cherrymxblack.png' },
-    { name: 'AEBoards Staebies V2.1 Stabilizers', price: '₱6500.00', image: 'src/assets/stabilizers.png' },
+    {
+      name: "Rainy75 ",
+      price: "₱6500.00",
+      image: "src/assets/rainy75.png",
+      altImage: "src/assets/altImg/rainy75Alt.png",
+    },
+    {
+      name: "Retro Rainbow",
+      price: "₱6500.00",
+      image: "src/assets/retro.png",
+      altImage: "src/assets/altImg/retrorainbowAlt.png",
+    },
+    {
+      name: "Magnum65",
+      price: "₱6500.00",
+      image: "src/assets/magnum65.png",
+      altImage: "src/assets/altImg/magnum65Alt.png",
+    },
+    {
+      name: "Cherry Black MX Hyperglide",
+      price: "₱6500.00",
+      image: "src/assets/cherrymxblack.png",
+      altImage: "src/assets/altImg/cherrymxblackAlt.png",
+    },
+    {
+      name: "AEBoards Staebies V2.1 Stabilizers",
+      price: "₱6500.00",
+      image: "src/assets/stabilizers.png",
+      altImage: "src/assets/altImg/stabilizersAlt.png",
+    },
   ],
   switches: [
-    { name: 'Mount Tai HE Magnetic Switches', price: '₱6500.00', image: 'src/assets/mounttai.png' },
-    { name: 'Cherry Black MX Hyperglide', price: '₱6500.00', image: 'src/assets/cherrymxblack.png' },
-    { name: 'Skyline Magnetic Switches', price: '₱6500.00', image: 'src/assets/skyline.png' },
-    { name: 'Gateron Magnetic Jade', price: '₱6500.00', image: 'src/assets/magneticjade.png' },
-    { name: 'MMD Princess Linear/Tactile Switches V2', price: '₱6500.00', image: 'src/assets/mmdprincess.png' },
-
+    {
+      name: "Mount Tai HE Magnetic Switches",
+      price: "₱6500.00",
+      image: "src/assets/mounttai.png",
+      altImage: "src/assets/altImg/mounttaiAlt.png",
+    },
+    {
+      name: "Cherry Black MX Hyperglide",
+      price: "₱6500.00",
+      image: "src/assets/cherrymxblack.png",
+      altImage: "src/assets/altImg/cherrymxblackAlt.png",
+    },
+    {
+      name: "Skyline Magnetic Switches",
+      price: "₱6500.00",
+      image: "src/assets/skyline.png",
+      altImage: "src/assets/altImg/skylineAlt.png",
+    },
+    {
+      name: "Gateron Magnetic Jade",
+      price: "₱6500.00",
+      image: "src/assets/magneticjade.png",
+      altImage: "src/assets/altImg/magneticjadeAlt.png",
+    },
+    {
+      name: "MMD Princess Linear/Tactile Switches V2",
+      price: "₱6500.00",
+      image: "src/assets/mmdprincess.png",
+      altImage: "src/assets/altImg/mmdprincessAlt.png",
+    },
   ],
 };
 
-const MotionBox = motion(Box);
-
-// Create a component for each product row that handles its own animation
-const AnimatedProductRow = ({ title, items }) => {
-  const ref = useRef(null);
-  const controls = useAnimation();
-  
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          controls.start('visible');
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-    
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, [controls]);
-
-  return (
-    <VStack align="start" spacing={6} mb={12} ref={ref} width="100%">
-<Text fontSize="3xl" fontWeight="bold" color="black" width="100%" textAlign="center">
-  {title}
-</Text>
-
-      <Center width="100%">
-        <SimpleGrid 
-          columns={{ base: 1, sm: 2, md: 3, lg: 5 }} 
-          spacing={8} 
-          width="100%"
-          justifyContent="center"
-        >
-          {items.map((item, index) => (
-            <MotionBox
-              key={index}
-              initial="hidden"
-              animate={controls}
-              variants={{
-                hidden: { opacity: 0, y: 50 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-            >
-              {/* Image container */}
-              <Center width="100%">
-                <Box
-                  bg="white"
-                  borderRadius="xl" // More rounded corners
-                  overflow="hidden"
-                  boxShadow="lg"
-                  width="100%"
-                  p={4}
-                >
-                  <Skeleton isLoaded={!!item.image}>
-                    <Box
-                      width="100%"
-                      height="0"
-                      paddingBottom="100%"
-                      position="relative"
-                    >
-                      <Box
-                        position="absolute"
-                        top="0"
-                        left="0"
-                        width="100%"
-                        height="100%"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        borderRadius="xl" // More rounded corners for image container
-                        overflow="hidden"
-                      >
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          style={{ 
-                            width: "100%", 
-                            height: "100%", 
-                            objectFit: "contain",
-                            borderRadius: "1rem" // Rounding the actual image
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                  </Skeleton>
-                </Box>
-              </Center>
-              
-              {/* Product info outside the main box */}
-              <Box mt={3} textAlign="center" width="100%">
-                <Text fontSize="lg" fontWeight="bold" color="black">
-                  {item.name}
-                </Text>
-                <Text fontSize="md" color="black" mt={1}>
-                  {item.price}
-                </Text>
-              </Box>
-            </MotionBox>
-          ))}
-        </SimpleGrid>
-      </Center>
-    </VStack>
-  );
-};
+const MotionImg = motion.img;
 
 const HomePage = () => {
   return (
-    <Box bg="white" px={{ base: 4, md: 8 }} py={8} overflowY="auto" h="calc(100vh - 120px)">
-      <Flex 
-        direction="column" 
-        maxW={{ base: "100%", xl: "1800px" }} 
-        mx="auto" 
+    <Box
+      bg="white"
+      px={{ base: 4, md: 8 }}
+      py={8}
+      overflowY="auto"
+      h="calc(100vh - 120px)"
+    >
+      <Flex
+        direction="column"
+        maxW={{ base: "100%", xl: "1800px" }}
+        mx="auto"
         align="center"
         width="100%"
       >
-        {/* Featured Highlights - Horizontal Images with info INSIDE the box */}
+        {/* Featured Highlights - Images with overlay text */}
         <VStack align="center" spacing={8} mb={12} width="100%">
           <Text fontSize="4xl" fontWeight="bold" color="black">
             Featured Highlights
           </Text>
           <Center width="100%">
-            <SimpleGrid 
-              columns={{ base: 1, sm: 2 }} 
-              spacing={8} 
+            <SimpleGrid
+              columns={{ base: 1, sm: 2 }}
+              spacing={8}
               width="100%"
               justifyContent="center"
             >
               {products.featuredImages.map((item, index) => (
                 <Center key={index} width="100%">
-                  {/* Image container with product info inside */}
+                  {/* Single unified container for both image and text */}
                   <Box
                     bg="white"
-                    borderRadius="xl" // More rounded corners
+                    borderRadius="xl"
                     overflow="hidden"
                     boxShadow="lg"
                     width="100%"
-                    p={4}
-                    display="flex"
-                    flexDirection="column"
+                    position="relative"
                   >
                     <Skeleton isLoaded={!!item.image}>
+                      {/* Full container for the image */}
                       <Box
                         width="100%"
                         height="0"
-                        paddingBottom="56.25%" // 16:9 aspect ratio
+                        paddingBottom="75%" // Adjusted aspect ratio
                         position="relative"
-                        mb={4}
                       >
+                        {/* Image container */}
                         <Box
                           position="absolute"
                           top="0"
                           left="0"
                           width="100%"
                           height="100%"
-                          display="flex"
-                          alignItems="center"
-                          justifyContent="center"
-                          borderRadius="xl" // More rounded corners for image container
                           overflow="hidden"
                         >
-                          <img
+                          <MotionImg
                             src={item.image}
                             alt={item.name}
-                            style={{ 
-                              width: "90%", 
-                              height: "90%", 
-                              objectFit: "fill",
-                              borderRadius: "1rem" // Rounding the actual image
+                            style={{
+                              position: "absolute",
+                              top: "0",
+                              left:"0",
+                              width: "100%",
+                              height: "100%",
+                              objectFit:"cover",
+                              borderRadius: "0.75rem",
+                              transformOrigin: "center",
                             }}
+                            whileHover={{ scale: 1.15 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
                           />
+                        </Box>
+
+                        {/* Overlay for product info */}
+                        <Box
+                          position="absolute"
+                          top="0"
+                          left="0"
+                          height="100%"
+                          width="100%"
+                          background="rgba(0, 0, 0, 0.3)"
+                          borderRadius="0.75rem"
+                          pointerEvents="none"
+                        >
+                          <Box
+                            position="absolute"
+                            bottom="15%"
+                            width="100%"
+                            textAlign="center"
+                            p={4}
+                          >
+                            <Text
+                              fontSize="2xl"
+                              fontWeight="bold"
+                              color="white"
+                            >
+                              {item.name}
+                            </Text>
+                            <Text fontSize="xl" color="white">
+                              {item.price}
+                            </Text>
+                          </Box>
                         </Box>
                       </Box>
                     </Skeleton>
-                    
-                    {/* Product info INSIDE the box for Featured Highlights */}
-                    <Box mt={2} textAlign="center" width="100%">
-                      <Text fontSize="xl" fontWeight="bold" color="black">
-                        {item.name}
-                      </Text>
-                      <Text fontSize="lg" color="black" mt={1}>
-                        {item.price}
-                      </Text>
-                    </Box>
                   </Box>
                 </Center>
               ))}
@@ -239,8 +237,8 @@ const HomePage = () => {
           </Center>
         </VStack>
 
-        {/* Animated Product Rows - each with independent animation */}
-        <AnimatedProductRow title="New Arrivals"  items={products.newArrivals} />
+        {/* Animated Product Rows */}
+        <AnimatedProductRow title="New Arrivals" items={products.newArrivals} />
         <AnimatedProductRow title="Best Sellers" items={products.bestSellers} />
         <AnimatedProductRow title="Switches" items={products.switches} />
       </Flex>

@@ -2,6 +2,7 @@ import { Box } from '@chakra-ui/react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './pages/Homepage';
+import KeyCapsPage from './pages/KeyCapsPage';
 import SwitchesPage from './pages/SwitchesPage';
 
 const navItems = [
@@ -28,7 +29,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/keyboards" element={<div>Keyboards Page</div>} />
           <Route path="/switches" element={<SwitchesPage />} />
-          <Route path="/keycaps" element={<div>Key Caps Page</div>} />
+          <Route path="/keycaps" element={<KeyCapsPage />} />
           <Route path="/others" element={<div>Others Page</div>} />
           <Route path="/compare" element={<div>Compare Page</div>} />
           <Route path="*" element={<div>404 - Page Not Found</div>} />

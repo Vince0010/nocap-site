@@ -1,19 +1,19 @@
 import { Box, Flex, SimpleGrid, Text, VStack, Select, Input, Button } from '@chakra-ui/react';
 
-// Placeholder data for switches (replace with database data later)
-const switches = [
-  { name: 'Akko Cream Blue Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Yellow Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Black Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Lavender Purple', price: '₱380.00', image: 'https://via.placeholder.com/200' },
+// Placeholder data for keycap sets (replace with database data later)
+const keycapSets = [
+  { name: 'GMK Laser', price: '₱8500.00', image: 'https://via.placeholder.com/280x280' },
+  { name: 'SA Pulse', price: '₱7800.00', image: 'https://via.placeholder.com/280x280' },
+  { name: 'DSA Milkshake', price: '₱6500.00', image: 'https://via.placeholder.com/280x280' },
+  { name: 'Cherry Blossom', price: '₱7200.00', image: 'https://via.placeholder.com/280x280' },
   // Add more items to test scrolling
-  { name: 'Akko Cream Blue Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Yellow Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Cream Black Pro V3', price: '₱400.00', image: 'https://via.placeholder.com/200' },
-  { name: 'Akko Lavender Purple', price: '₱380.00', image: 'https://via.placeholder.com/200' },
+  { name: 'GMK Laser', price: '₱8500.00', image: 'https://via.placeholder.com/280x280' },
+  { name: 'SA Pulse', price: '₱7800.00', image: 'https://via.placeholder.com/280x280' },
+  { name: 'DSA Milkshake', price: '₱6500.00', image: 'https://via.placeholder.com/280x280' },
+  { name: 'Cherry Blossom', price: '₱7200.00', image: 'https://via.placeholder.com/280x280' },
 ];
 
-const SwitchesPage = () => {
+const KeyCapsPage = () => {
   return (
     <Box
       h="calc(100vh - 120px)"
@@ -81,8 +81,9 @@ const SwitchesPage = () => {
             </Text>
             <Select bg="white" color="black">
               <option value="">Select</option>
-              <option value="akko">Akko</option>
-              <option value="gateron">Gateron</option>
+              <option value="gmk">GMK</option>
+              <option value="sa">SA</option>
+              <option value="dsa">DSA</option>
             </Select>
           </VStack>
         </Box>
@@ -96,13 +97,13 @@ const SwitchesPage = () => {
             mb={4}
             textAlign="center"
           >
-            SWITCHES
+            KEYCAP SETS
           </Text>
           <SimpleGrid
-            columns={{ base: 1, sm: 2, md: 3, lg: 4 }}
-            spacing={4}
+            columns={{ base: 1, sm: 2, md: 2, lg: 3 }} // Reduced to 3 columns on lg
+            spacing={8}
           >
-            {switches.map((item, index) => (
+            {keycapSets.map((item, index) => (
               <VStack key={index} spacing={2} align="center">
                 <Box
                   bg="white"
@@ -113,8 +114,8 @@ const SwitchesPage = () => {
                   boxShadow="sm"
                 >
                   <Box
-                    w="100%"
-                    h="200px"
+                    w="280px" // Slightly larger width
+                    h="280px" // Matching height for square
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -141,4 +142,4 @@ const SwitchesPage = () => {
   );
 };
 
-export default SwitchesPage;
+export default KeyCapsPage;

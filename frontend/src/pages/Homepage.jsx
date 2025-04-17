@@ -4,41 +4,36 @@ import { Box, Flex, SimpleGrid, Text, VStack, Skeleton, Center } from '@chakra-u
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
+
 // Placeholder product data
 const products = {
   featuredImages: [
     { name: 'GMK Laser Keycaps', price: '₱8500.00', image: 'src/assets/laser-65-2_1500x.png' },
-    { name: 'Margo', price: '₱15100.00', image: 'src/assets/margo.png' },
+    { name: 'Margo', price: '₱15100.00', image: 'src/assets/margof.png' },
     { name: 'PBTFANS Ronin', price: '₱6500.00', image: 'src/assets/ronin.png' },
     { name: 'Tofu60 2.0', price: '₱7800.00', image: 'src/assets/tofu60.png' },
   ],
   newArrivals: [
-    { name: 'GMK Laser Keycaps', price: '₱8500.00', image:'src/assets/laser-65-2_1500x.png' },
+    { name: 'S9000', price: '₱8500.00', image:'src/assets/S9000.png' },
     { name: 'Margo', price: '₱15100.00', image: 'src/assets/margo.png' },
-    { name: 'Zealio Switches', price: '₱6500.00', image: 'src/assets/zealios.png' },
-    { name: 'PBTFANS Ronin', price: '₱6500.00', image: 'src/assets/ronin.png' },
+    { name: 'Mount Tai HE Magnetic Switches', price: '₱6500.00', image: 'src/assets/mounttai.png' },
+    { name: 'Electronic Pet', price: '₱6500.00', image: 'src/assets/electronicpet.png' },
     { name: 'Tofu60 2.0', price: '₱7800.00', image: 'src/assets/tofu60.png' },
   ],
   bestSellers: [
-    { name: 'DSA Milkshake Keycaps', price: '₱6500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'White Fox Keyboard', price: '₱12000.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Cherry Blossom Set', price: '₱7200.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Gateron Ink Switches', price: '₱5500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Custom Cable', price: '₱2500.00', image: 'https://via.placeholder.com/500x500' },
-  ],
-  featuredProducts: [
-    { name: 'Pavlov Keyboard', price: '₱12900.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Gateron Ink Switches', price: '₱5500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'TET Keyboard', price: '₱15000.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Custom Cable', price: '₱2500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Zealio Switches', price: '₱6500.00', image: 'https://via.placeholder.com/500x500' },
+    { name: 'Rainy75 ', price: '₱6500.00', image: 'src/assets/rainy75.png' },
+    { name: 'Retro Rainbow', price: '₱6500.00', image: 'src/assets/retro.png' },
+    { name: 'Magnum65', price: '₱6500.00', image: 'src/assets/magnum65.png' },
+    { name: 'Cherry Black MX Hyperglide', price: '₱6500.00', image: 'src/assets/cherrymxblack.png' },
+    { name: 'AEBoards Staebies V2.1 Stabilizers', price: '₱6500.00', image: 'src/assets/stabilizers.png' },
   ],
   switches: [
-    { name: 'Zealio V2 Switches', price: '₱7000.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Gateron Milky Yellow', price: '₱4500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'JWK Linear Switches', price: '₱6000.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Aliaz Silent Switches', price: '₱6500.00', image: 'https://via.placeholder.com/500x500' },
-    { name: 'Gateron Ink Switches', price: '₱5500.00', image: 'https://via.placeholder.com/500x500' },
+    { name: 'Mount Tai HE Magnetic Switches', price: '₱6500.00', image: 'src/assets/mounttai.png' },
+    { name: 'Cherry Black MX Hyperglide', price: '₱6500.00', image: 'src/assets/cherrymxblack.png' },
+    { name: 'Skyline Magnetic Switches', price: '₱6500.00', image: 'src/assets/skyline.png' },
+    { name: 'Gateron Magnetic Jade', price: '₱6500.00', image: 'src/assets/magneticjade.png' },
+    { name: 'MMD Princess Linear/Tactile Switches V2', price: '₱6500.00', image: 'src/assets/mmdprincess.png' },
+
   ],
 };
 

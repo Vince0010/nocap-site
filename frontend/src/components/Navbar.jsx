@@ -36,7 +36,7 @@ const Navbar = ({
             {/* Placeholder for logo icon - replace with actual icon/image */}
             <Box mr={3}>
               <Text fontSize="2xl" color="white" fontWeight="bold">
-                🔲 {/* Replace with your logo icon */}
+                 {/* Replace with your logo icon */}
               </Text>
             </Box>
             <Text fontSize="2xl" color="white" fontWeight="bold">

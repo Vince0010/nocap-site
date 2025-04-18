@@ -384,7 +384,7 @@ const ComparePage = () => {
     <Box
       h="calc(100vh - 150px)"
       overflowY="auto"
-      bg="white"
+      bg="gray.150"
       px={4}
       py={8}
       maxW="1400px"

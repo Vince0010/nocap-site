@@ -127,7 +127,7 @@ const MotionImg = motion.img;
 const HomePage = () => {
   return (
     <Box
-      bg="white"
+      bg="gray.150"
       px={{ base: 4, md: 8 }}
       py={8}
       overflowY="auto"
@@ -193,7 +193,7 @@ const HomePage = () => {
                               borderRadius: "0.75rem",
                               transformOrigin: "center",
                             }}
-                            whileHover={{ scale: 1.15 }}
+                            whileHover={{ scale: 1.04 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
                           />
                         </Box>
@@ -218,7 +218,7 @@ const HomePage = () => {
                           >
                             <Text
                               fontSize="2xl"
-                              fontWeight="bold"
+                              fontWeight="0.75rem"
                               color="white"
                             >
                               {item.name}

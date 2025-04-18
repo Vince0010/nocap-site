@@ -9,7 +9,6 @@ import {
 import { motion, useAnimation } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
-
 const MotionBox = motion(Box);
 const MotionImg = motion.img;
 
@@ -96,7 +95,7 @@ export const ProductBox = ({ item, index }) => {
                     left: "0",
                   }}
                   animate={{ opacity: isHovered ? 0 : 1 }} // Fade out primary image on hover
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.3 }}
                 />
                 {/* Alternate Image */}
                 <MotionImg
@@ -112,7 +111,7 @@ export const ProductBox = ({ item, index }) => {
                     left: "0",
                   }}
                   animate={{ opacity: isHovered ? 1 : 0 }} // Fade in alternate image on hover
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.3 }}
                 />
               </Box>
             </Box>
@@ -122,17 +121,19 @@ export const ProductBox = ({ item, index }) => {
 
       {/* Product info outside the main box */}
       <Box mt={3} textAlign="center" width="100%">
-        <Text fontSize="sm" fontWeight="bold" color="black">
+        <Text fontSize="sm" fontWeight="0.75rem" color="black">
           {item.name}
         </Text>
         <Text
-  fontSize="xs"
-  color={item.price ? "black" : "gray.500"}
-  mt={1}
-  fontStyle={item.price ? "normal" : "italic"}
->
-  {item.price == null || item.price === "" ? "No price info" : item.price}
-</Text>
+          fontSize="xs"
+          color={item.price ? "black" : "gray.500"}
+          mt={1}
+          fontStyle={item.price ? "normal" : "italic"}
+        >
+          {item.price == null || item.price === ""
+            ? "No price info"
+            : item.price}
+        </Text>
       </Box>
     </MotionBox>
   );

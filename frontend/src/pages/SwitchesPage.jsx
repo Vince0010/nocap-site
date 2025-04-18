@@ -151,7 +151,7 @@ const switches = [
 
 const SwitchesPage = () => {
   return (
-    <Box h="calc(100vh - 120px)" overflowY="auto" bg="white">
+    <Box h="calc(100vh - 120px)" overflowY="auto" bg="gray.150">
       <Flex
         direction={{ base: "column", md: "row" }}
         maxW="1400px"
@@ -167,7 +167,7 @@ const SwitchesPage = () => {
           top={{ md: "190px" }}
           h={{ md: "calc(100vh - 120px)" }}
           overflowY={{ md: "auto" }}
-          bg="white"
+          bg="gray.150"
           pr={{ md: 4 }}
         >
           <VStack align="start" spacing={4}>

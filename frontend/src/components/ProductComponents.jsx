@@ -49,7 +49,7 @@ export const ProductBox = ({ item, index }) => {
         hidden: { opacity: 0, y: 50 },
         visible: { opacity: 1, y: 0 },
       }}
-      transition={{ duration: 0.3, delay: index * 0.2 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
       display="flex"
       flexDirection="column"
       alignItems="center"

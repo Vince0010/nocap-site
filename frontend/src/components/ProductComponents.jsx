@@ -9,14 +9,40 @@ import {
 import { motion, useAnimation } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
+
 const MotionBox = motion(Box);
 const MotionImg = motion.img;
 
-export const ProductBox = ({ item, index, controls }) => {
+export const ProductBox = ({ item, index }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const controls = useAnimation(); // Each ProductBox has its own animation controls
+  const ref = useRef(null);
+
+  // Trigger animation when the component enters the viewport
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          controls.start("visible");
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, [controls]);
 
   return (
     <MotionBox
+      ref={ref}
       key={index}
       initial="hidden"
       animate={controls}
@@ -69,7 +95,7 @@ export const ProductBox = ({ item, index, controls }) => {
                     top: "0",
                     left: "0",
                   }}
-                  animate={{ opacity: isHovered ? 1 : 1 }}
+                  animate={{ opacity: isHovered ? 0 : 1 }} // Fade out primary image on hover
                   transition={{ duration: 0.2 }}
                 />
                 {/* Alternate Image */}
@@ -85,7 +111,7 @@ export const ProductBox = ({ item, index, controls }) => {
                     top: "0",
                     left: "0",
                   }}
-                  animate={{ opacity: isHovered ? 1 : 0 }}
+                  animate={{ opacity: isHovered ? 1 : 0 }} // Fade in alternate image on hover
                   transition={{ duration: 0.2 }}
                 />
               </Box>
@@ -99,9 +125,14 @@ export const ProductBox = ({ item, index, controls }) => {
         <Text fontSize="sm" fontWeight="bold" color="black">
           {item.name}
         </Text>
-        <Text fontSize="xs" color="black" mt={1}>
-          {item.price}
-        </Text>
+        <Text
+  fontSize="xs"
+  color={item.price ? "black" : "gray.500"}
+  mt={1}
+  fontStyle={item.price ? "normal" : "italic"}
+>
+  {item.price == null || item.price === "" ? "No price info" : item.price}
+</Text>
       </Box>
     </MotionBox>
   );

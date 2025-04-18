@@ -6,6 +6,7 @@ import KeyCapsPage from './pages/KeyCapsPage';
 import SwitchesPage from './pages/SwitchesPage';
 import KeyboardPage from './pages/KeyboardPage';
 import OthersPage from './pages/OthersPage';
+import ComparePage from './pages/ComparePage';
 
 const navItems = [
   { label: 'Home', href: '/' },
@@ -33,7 +34,7 @@ function App() {
           <Route path="/switches" element={<SwitchesPage />} />
           <Route path="/keycaps" element={<KeyCapsPage />} />
           <Route path="/others" element={<OthersPage />} />
-          <Route path="/compare" element={<div>Compare Page</div>} />
+          <Route path="/compare" element={<ComparePage/>} />
           <Route path="*" element={<div>404 - Page Not Found</div>} />
         </Routes>
       </Box>

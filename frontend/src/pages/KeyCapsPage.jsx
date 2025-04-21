@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import {
   Box,
   Flex,
@@ -8,46 +9,65 @@ import {
   Input,
   Button,
   Center,
+  Skeleton,
 } from "@chakra-ui/react";
-import {
-  AnimatedProductRow,
-  ProductBox,
-} from "../components/ProductComponents";
+import {AnimatedProductRow,ProductBox,} from "../components/ProductComponents";
+import { useState, useEffect } from "react";
 // Placeholder data for switches (replace with database data later)
-const keycaps = [
-  {
-    name: "S9000",
-    price: "₱8500.00",
-    image: "src/assets/S9000.png",
-    altImage: "src/assets/altImg/S9000Alt.png",
-  },
-  {
-    name: "Margo",
-    price: "₱15100.00",
-    image: "src/assets/margo.png",
-    altImage: "src/assets/altImg/margoAlt.png",
-  },
-  {
-    name: "Mount Tai HE Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/mounttai.png",
-    altImage: "src/assets/altImg/mounttaiAlt.png",
-  },
-  {
-    name: "Electronic Pet",
-    price: "₱6500.00",
-    image: "src/assets/electronicpet.png",
-    altImage: "src/assets/altImg/electronicpetAlt.png",
-  },
-  {
-    name: "Tofu60 Redux Kit",
-    price: "₱7800.00",
-    image: "src/assets/tofu60.png",
-    altImage: "src/assets/altImg/tofu60Alt.png",
-  },
-];
 
 const KeyCapsPage = () => {
+  const [keycaps, setKeycaps] = useState([]);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [availability, setAvailability] = useState("");
+  const [brand, setBrand] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchKeycaps = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const queryParamsObj = {};
+      if (minPrice && minPrice !== "") queryParamsObj.minPrice = minPrice;
+      if (maxPrice && maxPrice !== "") queryParamsObj.maxPrice = maxPrice;
+      if (availability && availability !== "")
+        queryParamsObj.availability = availability;
+      if (brand && brand !== "") queryParamsObj.brand = brand;
+
+      const queryParams = new URLSearchParams(queryParamsObj).toString();
+      const url = queryParams
+        ? `/api/keycaps?${queryParams}&_t=${Date.now()}`
+        : `/api/keycaps?_t=${Date.now()}`;
+
+      console.log("Fetching keyboards with URL:", url);
+      const response = await fetch(url);
+      console.log("Response headers:", [...response.headers.entries()]);
+      if (!response.ok) {
+        const text = await response.text();
+        console.log("Response status:", response.status);
+        console.log("Response error text:", text.slice(0, 100));
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Fetched keyboards:", data);
+      setKeycaps(data);
+    } catch (error) {
+      console.error("Error fetching keyboards:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchKeycaps();
+  }, [minPrice, maxPrice, availability, brand]);
+
+  const handleApplyFilters = () => {
+    fetchKeycaps();
+  };
+
   return (
     <Box h="calc(100vh - 120px)" overflowY="auto" bg="gray.150">
       <Flex
@@ -57,7 +77,6 @@ const KeyCapsPage = () => {
         py={8}
         px={4}
       >
-        {/* Sidebar: Filter Panel */}
         <Box
           w={{ base: "100%", md: "250px" }}
           mb={{ base: 4, md: 0 }}
@@ -69,7 +88,6 @@ const KeyCapsPage = () => {
           pr={{ md: 4 }}
         >
           <VStack align="start" spacing={4}>
-            {/* Price Range Filter */}
             <Text fontSize="md" fontWeight="bold" color="black">
               Price Range
             </Text>
@@ -80,48 +98,73 @@ const KeyCapsPage = () => {
                 color="black"
                 mr={2}
                 _placeholder={{ color: "gray.500" }}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
               />
               <Input
                 placeholder="MAX"
                 bg="white"
                 color="black"
                 _placeholder={{ color: "gray.500" }}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
               />
             </Flex>
             <Button
-                bg="gray.700"
-                color="white"
-                w="100%"
-                _hover={{ bg: "gray.900" }}
-              >
-                Apply
-              </Button>
-
-            {/* Availability Filter */}
+              bg="gray.700"
+              color="white"
+              w="100%"
+              _hover={{ bg: "gray.900" }}
+              onClick={handleApplyFilters}
+            >
+              Apply
+            </Button>
             <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
               Availability
             </Text>
-            <Select bg="white" color="black">
+            <Select
+              bg="white"
+              color="black"
+              value={availability}
+              onChange={(e) => setAvailability(e.target.value)}
+            >
               <option value="">Select</option>
               <option value="in-stock">In Stock</option>
               <option value="out-of-stock">Out of Stock</option>
             </Select>
-
-            {/* Brand Filter */}
             <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
               Brand
             </Text>
-            <Select bg="white" color="black">
+            <Select
+              bg="white"
+              color="black"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+            >
               <option value="">Select</option>
               <option value="akko">Akko</option>
               <option value="gateron">Gateron</option>
             </Select>
           </VStack>
         </Box>
-
-        {/* Main Content: Product Grid */}
-        <Box ml="250px" p={4}>
-          <AnimatedProductRow title="Key Caps" items={keycaps} />
+        <Box ml={{ base: 0, md: "250px" }} p={4}>
+          {error ? (
+            <Text color="red.500">Error: {error}</Text>
+          ) : loading ? (
+            <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 5 }} spacing={8}>
+              {[...Array(5)].map((_, index) => (
+                <Box key={index}>
+                  <Skeleton height="200px" />
+                  <Skeleton height="20px" mt={3} />
+                  <Skeleton height="20px" mt={1} />
+                </Box>
+              ))}
+            </SimpleGrid>
+          ) : keycaps.length === 0 ? (
+            <Text>No keyboards found with the selected filters.</Text>
+          ) : (
+            <AnimatedProductRow title="Keycaps" items={keycaps} />
+          )}
         </Box>
       </Flex>
     </Box>

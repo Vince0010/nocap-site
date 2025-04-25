@@ -72,7 +72,7 @@ const KeyCapsPage = () => {
     <Box h="calc(100vh - 120px)" overflowY="auto" bg="gray.150">
       <Flex
         direction={{ base: "column", md: "row" }}
-        maxW="1400px"
+        maxW="auto"
         mx="auto"
         py={8}
         px={4}
@@ -163,7 +163,7 @@ const KeyCapsPage = () => {
           ) : keycaps.length === 0 ? (
             <Text>No keyboards found with the selected filters.</Text>
           ) : (
-            <AnimatedProductRow title="Keycaps" items={keycaps} />
+            <AnimatedProductRow title="Keycaps" items={keycaps}  category={"keycaps"}/>
           )}
         </Box>
       </Flex>

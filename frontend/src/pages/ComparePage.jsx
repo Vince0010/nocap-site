@@ -26,15 +26,13 @@ import {
   Alert,
   AlertIcon,
   Center,
+  Skeleton,
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SearchIcon, CloseIcon, InfoIcon } from "@chakra-ui/icons";
 import { useAnimation } from "framer-motion";
-import {
-  AnimatedProductRow,
-  ProductBox,
-} from "../components/ProductComponents"; // Import the ProductBox component
+import { AnimatedProductRow, ProductBox } from "../components/ProductComponents";
 
 // Product categories and their specific comparable attributes
 const categoryAttributes = {
@@ -44,210 +42,58 @@ const categoryAttributes = {
   accessories: ["Type", "Compatibility", "Material"],
 };
 
-// Sample product database with comparison attributes by category
-const productDatabase = {
-  keycaps: [
-    {
-      id: 1,
-      name: "S9000",
-      price: "₱8500.00",
-      image: "src/assets/S9000.png",
-      altImage: "src/assets/altImg/S9000Alt.png",
-      attributes: {
-        Profile: "DSA",
-        Material: "PBT Dye-Sub",
-        "Layout Compatibility": "65%, 75%, TKL, Full-size",
-        "Stem Type": "Cherry MX",
-      },
-      description:
-        "Premium DSA profile keycaps with excellent texture and durability.",
-      inStock: true,
-    },
-    {
-      id: 2,
-      name: "Margo",
-      price: "₱15100.00",
-      image: "src/assets/margo.png",
-      altImage: "src/assets/altImg/margoAlt.png",
-      attributes: {
-        Profile: "Cherry",
-        // Missing "Material" attribute
-        "Layout Compatibility": "60%, 65%, TKL",
-        "Stem Type": "Cherry MX",
-      },
-      description: "High-end Cherry profile keycaps with vibrant colorways.",
-      inStock: true,
-    },
-    {
-      id: 3,
-      name: "Electronic Pet",
-      price: "₱6500.00",
-      image: "src/assets/electronicpet.png",
-      altImage: "src/assets/altImg/electronicpetAlt.png",
-      // No attributes defined for this product
-      description:
-        "Novelty keycap set with electronic pet theme and SA profile.",
-      inStock: false,
-    },
-  ],
-  switches: [
-    {
-      id: 4,
-      name: "Mount Tai HE Magnetic Switches",
-      price: "₱6500.00",
-      image: "src/assets/mounttai.png",
-      altImage: "src/assets/altImg/mounttaiAlt.png",
-      attributes: {
-        Type: "Linear",
-        "Actuation Force": "45g",
-        "Travel Distance": "4.0mm",
-        "Pre-Travel": "2.0mm",
-      },
-      description:
-        "Magnetic switches with smooth linear feel and consistent actuation.",
-      inStock: true,
-    },
-    {
-      id: 5,
-      name: "Gateron Yellow Pro",
-      price: "₱2500.00",
-      image: "src/assets/gateron.png",
-      altImage: "src/assets/altImg/gateronAlt.png",
-      attributes: {
-        Type: "Linear",
-        "Actuation Force": "50g",
-        // Missing Travel Distance
-        "Pre-Travel": "2.0mm",
-      },
-      description:
-        "Budget-friendly smooth linear switches, factory lubed for better performance.",
-      inStock: true,
-    },
-    {
-      id: 6,
-      name: "Holy Panda X",
-      price: "₱4800.00",
-      image: "src/assets/holypanda.png",
-      altImage: "src/assets/altImg/holypandaAlt.png",
-      attributes: {
-        Type: "Tactile",
-        "Actuation Force": "67g",
-        "Travel Distance": "3.8mm",
-        "Pre-Travel": "2.2mm",
-      },
-      description:
-        "Premium tactile switches with a pronounced tactile bump and satisfying sound profile.",
-      inStock: false,
-    },
-  ],
-  keyboards: [
-    {
-      id: 7,
-      name: "Tofu60 Redux Kit",
-      price: "₱7800.00",
-      image: "src/assets/tofu60.png",
-      altImage: "src/assets/altImg/tofu60Alt.png",
-      attributes: {
-        Size: "60%",
-        Connection: "Wired",
-        "Hot-Swappable": "Yes",
-        RGB: "Per-key",
-        "Case Material": "Aluminum",
-      },
-      description: "Compact 60% keyboard with aluminum case and hot-swap PCB.",
-      inStock: true,
-    },
-    {
-      id: 8,
-      name: "KBD67 Lite R4",
-      // Product with incomplete information
-      price: null,
-      image: "src/assets/tofu60.png",
-      altImage: "src/assets/altImg/tofu60Alt.png",
-      attributes: {
-        Size: "65%",
-        // Missing Connection attribute
-        "Hot-Swappable": "Yes",
-        RGB: "Per-key",
-        "Case Material": "Polycarbonate",
-      },
-      // Missing description
-      inStock: true,
-    },
-  ],
-  accessories: [
-    {
-      id: 9,
-      name: "Krytox 205g0",
-      price: "₱850.00",
-      image: "src/assets/krytox.png",
-      altImage: "src/assets/altImg/krytoxAlt.png",
-      attributes: {
-        Type: "Switch Lubricant",
-        Compatibility: "All switches",
-        Material: "PFPE/PTFE",
-      },
-      description:
-        "Premium switch lubricant for smoother key action and reduced noise.",
-      inStock: true,
-    },
-    {
-      id: 10,
-      name: "Coiled Aviator Cable",
-      price: "₱1500.00",
-      image: "src/assets/cable.png",
-      altImage: "src/assets/altImg/cableAlt.png",
-      attributes: null, // Completely missing attributes
-      description:
-        "Custom coiled cable with aviator connector and stylish sleeve.",
-      inStock: true,
-    },
-
-    {
-        id: 11,
-        name: "Cherry Black MX Hyperglide",
-        price: "₱6500.00",
-        image: "src/assets/cherrymxblack.png",
-        altImage: "src/assets/altImg/cherrymxblackAlt.png",
-      },
-      {
-        id: 12,
-        name: "AEBoards Staebies V2.1 Stabilizers",
-        price: "₱6500.00",
-        image: "src/assets/stabilizers.png",
-        altImage: "src/assets/altImg/stabilizersAlt.png",
-      },
-      {
-        id: 13,
-        name: "Rainy75 ",
-        price: "₱6500.00",
-        image: "src/assets/rainy75.png",
-        altImage: "src/assets/altImg/rainy75Alt.png",
-      },
-  ],
-};
-
-// Main comparison page component
 const ComparePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("keycaps");
   const [comparedProducts, setComparedProducts] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
   const [displayedProducts, setDisplayedProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const toast = useToast();
   const navigate = useNavigate();
-  const controls = useAnimation(); // For the ProductBox animations
+  const controls = useAnimation();
 
   useEffect(() => {
-    // Update available products when category changes
-    setAvailableProducts(productDatabase[selectedCategory] || []);
-    setDisplayedProducts(productDatabase[selectedCategory] || []);
-    // Reset compared products when changing categories
-    setComparedProducts([]);
-    // Reset search query
-    setSearchQuery("");
-    // Trigger animations
-    controls.start("visible");
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      setComparedProducts([]);
+      setSearchQuery("");
+      try {
+        const fetchCategory = selectedCategory === "accessories" ? "others" : selectedCategory;
+        const response = await fetch(`/api/${fetchCategory}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${selectedCategory}`);
+        }
+        const data = await response.json();
+
+        // Map backend data to match ComparePage structure
+        const mappedProducts = data.map((product) => ({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          formattedPrice: product.price ? `₱${parseFloat(product.price).toFixed(2)}` : null,
+          image: product.image,
+          altImage: product.altImage,
+          attributes: product.attributes || {},
+          description: product.description || `Premium ${selectedCategory} product.`,
+          inStock: product.availability === "in-stock",
+        }));
+
+        setAvailableProducts(mappedProducts);
+        setDisplayedProducts(mappedProducts);
+        controls.start("visible");
+        console.log(`Fetched ${selectedCategory}:`, mappedProducts);
+      } catch (error) {
+        console.error(`Error fetching ${selectedCategory}:`, error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
   }, [selectedCategory, controls]);
 
   // Search functionality
@@ -256,16 +102,13 @@ const ComparePage = () => {
     setSearchQuery(query);
 
     if (!query.trim()) {
-      // If search is empty, show all products in category
       setDisplayedProducts(availableProducts);
       return;
     }
 
-    // Filter products by name matching search query
     const filteredProducts = availableProducts.filter((product) =>
       product.name.toLowerCase().includes(query.toLowerCase())
     );
-
     setDisplayedProducts(filteredProducts);
   };
 
@@ -276,7 +119,6 @@ const ComparePage = () => {
 
   const handleAddToComparison = (productId) => {
     const product = availableProducts.find((p) => p.id === productId);
-
     if (!product) return;
 
     if (comparedProducts.some((p) => p.id === productId)) {
@@ -296,7 +138,7 @@ const ComparePage = () => {
         status: "error",
         duration: 3000,
         isClosable: true,
-        bg:"gray.200"
+        bg: "gray.200",
       });
       return;
     }
@@ -319,31 +161,23 @@ const ComparePage = () => {
   // Helper function to display product info or "No info" if not available
   const displayProductInfo = (product, field) => {
     if (field === "price") {
-      return (
-        product.price || (
-          <Text color="gray.500" fontSize="sm" fontStyle="italic">
-            No price info
-          </Text>
-        )
-      );
-    }
-
-    if (field === "description") {
-      return (
-        product.description || (
-          <Text color="gray.500" fontSize="sm" fontStyle="italic">
-            No description available
-          </Text>
-        )
-      );
-    }
-
-    return (
-      product[field] || (
+      return product.formattedPrice || (
         <Text color="gray.500" fontSize="sm" fontStyle="italic">
-          No info
+          No price info
         </Text>
-      )
+      );
+    }
+    if (field === "description") {
+      return product.description || (
+        <Text color="gray.500" fontSize="sm" fontStyle="italic">
+          No description available
+        </Text>
+      );
+    }
+    return product[field] || (
+      <Text color="gray.500" fontSize="sm" fontStyle="italic">
+        No info
+      </Text>
     );
   };
 
@@ -356,40 +190,41 @@ const ComparePage = () => {
         </Text>
       );
     }
-
-    return (
-      product.attributes[attribute] || (
-        <Text color="gray.500" fontSize="sm" fontStyle="italic">
-          No info
-        </Text>
-      )
+    return product.attributes[attribute] || (
+      <Text color="gray.500" fontSize="sm" fontStyle="italic">
+        No info
+      </Text>
     );
   };
 
-  // Check if any products have missing information
+  // Check for incomplete products
   const hasIncompleteProducts = comparedProducts.some((product) => {
-    // Check basic product info
-    if (!product.price || !product.description) return true;
-
-    // Check if attributes are completely missing
+    if (!product.formattedPrice || !product.description) return true;
     if (!product.attributes) return true;
-
-    // Check if any required attribute is missing
     return categoryAttributes[selectedCategory].some(
       (attr) => !product.attributes[attr]
     );
   });
 
+  if (error) {
+    return (
+      <Box bg="gray.150" px={4} py={8} maxW="1400px" mx="auto" minH="100vh">
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          Error: {error}
+        </Alert>
+      </Box>
+    );
+  }
+
   return (
-    <Box
-      h="calc(100vh - 150px)"
-      overflowY="auto"
-      bg="gray.150"
-      px={4}
-      py={8}
-      maxW="1400px"
-      mx="auto"
-    >
+    <Box  h="calc(105vh - 150px)"
+    overflowY="auto"
+    bg="gray.150"
+    px={4}
+    py={8}
+    maxW="auto"
+    mx="auto">
       <Heading as="h1" mb={6} color="gray.800">
         Product Comparison
       </Heading>
@@ -402,12 +237,7 @@ const ComparePage = () => {
         gap={4}
         wrap="wrap"
       >
-        <Text
-          fontSize="lg"
-          fontWeight="bold"
-          color="gray.700"
-          whiteSpace="nowrap"
-        >
+        <Text fontSize="lg" fontWeight="bold" color="gray.700" whiteSpace="nowrap">
           Select Category:
         </Text>
         <Select
@@ -424,11 +254,7 @@ const ComparePage = () => {
           <option value="accessories">Accessories</option>
         </Select>
 
-        {/* Search Input */}
-        <InputGroup
-          maxW={{ base: "100%", md: "300px" }}
-          ml={{ base: 0, md: 4 }}
-        >
+        <InputGroup maxW={{ base: "100%", md: "300px" }} ml={{ base: 0, md: 4 }}>
           <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.400" />
           </InputLeftElement>
@@ -486,13 +312,29 @@ const ComparePage = () => {
         </Box>
       )}
 
-      {/* Products to Compare Section - Now using ProductBox component */}
+      {/* Products to Compare Section */}
       <Box mb={8}>
         <Heading as="h2" size="md" mb={4} color="gray.700">
           Select Products to Compare
         </Heading>
 
-        {displayedProducts.length > 0 ? (
+        {loading ? (
+          <Grid
+            templateColumns={{
+              base: "repeat(1, 1fr)",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(3, 1fr)",
+              lg: "repeat(4, 1fr)",
+            }}
+            gap={6}
+          >
+            {[...Array(8)].map((_, index) => (
+              <GridItem key={index}>
+                <Skeleton height="300px" width="100%" borderRadius="xl" />
+              </GridItem>
+            ))}
+          </Grid>
+        ) : displayedProducts.length > 0 ? (
           <Grid
             templateColumns={{
               base: "repeat(1, 1fr)",
@@ -505,14 +347,12 @@ const ComparePage = () => {
             {displayedProducts.map((product, index) => (
               <GridItem key={product.id}>
                 <Box position="relative">
-                  {/* Using ProductBox component */}
                   <ProductBox
                     item={product}
                     index={index}
+                    category={selectedCategory}
                     controls={controls}
                   />
-
-                  {/* Add status badges and action button overlay */}
                   <Box position="absolute" top={2} right={2}>
                     {!product.inStock && (
                       <Badge colorScheme="red" mb={2}>
@@ -520,9 +360,8 @@ const ComparePage = () => {
                       </Badge>
                     )}
                   </Box>
-
                   {(!product.attributes ||
-                    !product.price ||
+                    !product.formattedPrice ||
                     !product.description ||
                     categoryAttributes[selectedCategory].some(
                       (attr) => !product.attributes?.[attr]
@@ -539,8 +378,6 @@ const ComparePage = () => {
                       Incomplete Info
                     </Badge>
                   )}
-
-                  {/* Compare  - positioned at bottom */}
                   <Box mt={4} textAlign="center">
                     <Button
                       size="sm"
@@ -549,14 +386,10 @@ const ComparePage = () => {
                       bg="gray.700"
                       color="white"
                       _hover={{ bg: "gray.900" }}
-                      isDisabled={comparedProducts.some(
-                        (p) => p.id === product.id
-                      )}
+                      isDisabled={comparedProducts.some((p) => p.id === product.id)}
                       onClick={() => handleAddToComparison(product.id)}
                     >
-                      {comparedProducts.some((p) => p.id === product.id)
-                        ? "Added"
-                        : "Compare"}
+                      {comparedProducts.some((p) => p.id === product.id) ? "Added" : "Compare"}
                     </Button>
                   </Box>
                 </Box>
@@ -585,28 +418,33 @@ const ComparePage = () => {
 
       {/* Comparison Table */}
       {comparedProducts.length > 0 && (
-        <Box mt={10} overflowX="auto">
+        <Box mt={10} overflowX="auto" borderRadius="xl" overflow="hidden">
           <Heading as="h2" size="md" mb={4} color="gray.700">
             Comparison Results
           </Heading>
-
-          {/* Warning for incomplete product info */}
           {hasIncompleteProducts && (
-            <Alert status="info" mb={4} borderRadius="md" bg="gray.50" >
+            <Alert status="info" mb={4} borderRadius="md" bg="gray.50">
               <AlertIcon color="black" />
-              Some products have incomplete information. Missing details are
-              marked as "No info".
+              Some products have incomplete information. Missing details are marked as "No info".
             </Alert>
           )}
-
-          <Table variant="simple" borderWidth="1px" borderColor="gray.200" >
-            <Thead >
-              <Tr bg="gray.50" >
-                <Th width="20%">Feature</Th>
-                {comparedProducts.map((product) => (
+          <Table
+            variant="simple"
+            borderWidth="1px"
+            borderColor="gray.200"
+            borderRadius="xl"
+            overflow="hidden"
+          >
+            <Thead>
+              <Tr bg="gray.50">
+                <Th width="20%" borderTopLeftRadius="xl">
+                  Feature
+                </Th>
+                {comparedProducts.map((product, index) => (
                   <Th
                     key={product.id}
                     width={`${80 / comparedProducts.length}%`}
+                    borderTopRightRadius={index === comparedProducts.length - 1 ? "xl" : "0"}
                   >
                     <Flex justify="space-between" align="center">
                       <Text>{product.name}</Text>
@@ -620,7 +458,6 @@ const ComparePage = () => {
               </Tr>
             </Thead>
             <Tbody>
-              {/* Product Image */}
               <Tr>
                 <Td fontWeight="bold">Image</Td>
                 {comparedProducts.map((product) => (
@@ -637,18 +474,12 @@ const ComparePage = () => {
                   </Td>
                 ))}
               </Tr>
-
-              {/* Price */}
               <Tr>
                 <Td fontWeight="bold">Price</Td>
                 {comparedProducts.map((product) => (
-                  <Td key={product.id}>
-                    {displayProductInfo(product, "price")}
-                  </Td>
+                  <Td key={product.id}>{displayProductInfo(product, "price")}</Td>
                 ))}
               </Tr>
-
-              {/* Availability */}
               <Tr>
                 <Td fontWeight="bold">Availability</Td>
                 {comparedProducts.map((product) => (
@@ -659,36 +490,25 @@ const ComparePage = () => {
                   </Td>
                 ))}
               </Tr>
-
-              {/* Description */}
               <Tr>
                 <Td fontWeight="bold">Description</Td>
                 {comparedProducts.map((product) => (
-                  <Td key={product.id}>
-                    {displayProductInfo(product, "description")}
-                  </Td>
+                  <Td key={product.id}>{displayProductInfo(product, "description")}</Td>
                 ))}
               </Tr>
-
-              {/* Category-specific attributes */}
               {categoryAttributes[selectedCategory]?.map((attribute) => (
                 <Tr key={attribute}>
                   <Td fontWeight="bold">{attribute}</Td>
                   {comparedProducts.map((product) => (
-                    <Td key={product.id}>
-                      {displayAttributeInfo(product, attribute)}
-                    </Td>
+                    <Td key={product.id}>{displayAttributeInfo(product, attribute)}</Td>
                   ))}
                 </Tr>
               ))}
-
-
             </Tbody>
           </Table>
         </Box>
       )}
 
-      {/* Empty state for comparison */}
       {comparedProducts.length === 0 && (
         <Box
           textAlign="center"

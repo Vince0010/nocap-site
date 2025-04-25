@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-/* eslint-disable react-hooks/rules-of-hooks */
 import {
   Box,
   Flex,
@@ -11,127 +10,100 @@ import {
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { AnimatedProductRow } from "../components/ProductComponents";
-
-// Placeholder product data with alternate images
-const products = {
-  featuredImages: [
-    {
-      name: "GMK Laser Keycaps",
-      price: "₱8500.00",
-      image: "src/assets/laser-65-2_1500x.png",
-    },
-    { name: "Margo", price: "₱15100.00", image: "src/assets/margof.png" },
-    { name: "PBTFANS Ronin", price: "₱6500.00", image: "src/assets/ronin.png" },
-    { name: "Tofu60 Redux Kit", price: "₱7800.00", image: "src/assets/tofu60.png" },
-  ],
-  newArrivals: [
-    {
-      name: "S9000",
-      price: "₱8500.00",
-      image: "src/assets/S9000.png",
-      altImage: "src/assets/altImg/S9000Alt.png",
-    },
-    {
-      name: "Margo",
-      price: "₱15100.00",
-      image: "src/assets/margo.png",
-      altImage: "src/assets/altImg/margoAlt.png",
-    },
-    {
-      name: "Mount Tai HE Magnetic Switches",
-      price: "₱6500.00",
-      image: "src/assets/mounttai.png",
-      altImage: "src/assets/altImg/mounttaiAlt.png",
-    },
-    {
-      name: "Electronic Pet",
-      price: "₱6500.00",
-      image: "src/assets/electronicpet.png",
-      altImage: "src/assets/altImg/electronicpetAlt.png",
-    },
-    {
-      name: "Tofu60 Redux Kit",
-      price: "₱7800.00",
-      image: "src/assets/tofu60.png",
-      altImage: "src/assets/altImg/tofu60Alt.png",
-    },
-  ],
-  bestSellers: [
-    {
-      name: "Rainy75 ",
-      price: "₱6500.00",
-      image: "src/assets/rainy75.png",
-      altImage: "src/assets/altImg/rainy75Alt.png",
-    },
-    {
-      name: "Retro Rainbow",
-      price: "₱6500.00",
-      image: "src/assets/retro.png",
-      altImage: "src/assets/altImg/retrorainbowAlt.png",
-    },
-    {
-      name: "Magnum65",
-      price: "₱6500.00",
-      image: "src/assets/magnum65.png",
-      altImage: "src/assets/altImg/magnum65Alt.png",
-    },
-    {
-      name: "Cherry Black MX Hyperglide",
-      price: "₱6500.00",
-      image: "src/assets/cherrymxblack.png",
-      altImage: "src/assets/altImg/cherrymxblackAlt.png",
-    },
-    {
-      name: "AEBoards Staebies V2.1 Stabilizers",
-      price: "₱6500.00",
-      image: "src/assets/stabilizers.png",
-      altImage: "src/assets/altImg/stabilizersAlt.png",
-    },
-  ],
-  switches: [
-    {
-      name: "Mount Tai HE Magnetic Switches",
-      price: "₱6500.00",
-      image: "src/assets/mounttai.png",
-      altImage: "src/assets/altImg/mounttaiAlt.png",
-    },
-    {
-      name: "Cherry Black MX Hyperglide",
-      price: "₱6500.00",
-      image: "src/assets/cherrymxblack.png",
-      altImage: "src/assets/altImg/cherrymxblackAlt.png",
-    },
-    {
-      name: "Skyline Magnetic Switches",
-      price: "₱6500.00",
-      image: "src/assets/skyline.png",
-      altImage: "src/assets/altImg/skylineAlt.png",
-    },
-    {
-      name: "Gateron Magnetic Jade",
-      price: "₱6500.00",
-      image: "src/assets/magneticjade.png",
-      altImage: "src/assets/altImg/magneticjadeAlt.png",
-    },
-    {
-      name: "MMD Princess Linear/Tactile Switches V2",
-      price: "₱6500.00",
-      image: "src/assets/mmdprincess.png",
-      altImage: "src/assets/altImg/mmdprincessAlt.png",
-    },
-  ],
-};
+import { useState, useEffect } from "react";
 
 const MotionImg = motion.img;
 
 const HomePage = () => {
+  const [data, setData] = useState({
+    featuredImages: [],
+    newArrivals: [],
+    bestSellers: [],
+    switches: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch data for each category
+        const [keyboardsRes, switchesRes, keycapsRes, othersRes] =
+          await Promise.all([
+            fetch("/api/keyboards"),
+            fetch("/api/switches"),
+            fetch("/api/keycaps"), 
+            fetch("/api/others"),
+          ]);
+
+        if (
+          !keyboardsRes.ok ||
+          !switchesRes.ok ||
+          !keycapsRes.ok ||
+          !othersRes.ok
+        ) {
+          throw new Error("Failed to fetch products");
+        }
+
+        const [keyboards, switches, keycaps, others] = await Promise.all([
+          keyboardsRes.json(),
+          switchesRes.json(),
+          keycapsRes.json(),
+          othersRes.json(),
+        ]);
+
+        // Map data to sections
+        setData({
+          featuredImages: [
+            { ...keycaps[1], category: "keycaps" }, 
+            { ...keyboards[4], category: "keyboards" },
+            { ...keyboards[3], category: "keyboards" }, 
+            { ...keycaps[2], category: "keycaps"  }, 
+          ],
+          newArrivals: [
+            { ...keyboards[2], category: "keyboards" }, 
+            { ...keyboards[0], category: "keyboards" }, 
+            { ...switches[0], category: "switches" },  
+            { ...others[0], category: "others" }, 
+            { ...keyboards[1], category: "keyboards" }, 
+          ],
+          bestSellers: keyboards
+            .slice(0, 5)
+            .map((item) => ({ ...item, category: "keyboards" })), // Use keyboards for consistency
+          switches: switches .slice(0, 5) .map((item) => ({ ...item, category: "switches" })),
+        });
+
+        console.log("Fetched data:", { keyboards, switches, keycaps, others });
+      } catch (error) {
+        console.error("Error fetching homepage data:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (error) {
+    return (
+      <Box bg="black" px={{ base: 4, md: 8 }} py={8} h="calc(100vh - 120px)">
+        <Text color="red.500" textAlign="center">
+          Error: {error}
+        </Text>
+      </Box>
+    );
+  }
+
   return (
     <Box
-      bg="gray.150"
+      bg="#white"
       px={{ base: 4, md: 8 }}
       py={8}
       overflowY="auto"
-      h="calc(100vh - 120px)"
+      h="calc(103.5vh - 120px)"
     >
       <Flex
         direction="column"
@@ -146,32 +118,35 @@ const HomePage = () => {
             Featured Highlights
           </Text>
           <Center width="100%">
-            <SimpleGrid
-              columns={{ base: 1, sm: 2 }}
-              spacing={8}
-              width="100%"
-              justifyContent="center"
-            >
-              {products.featuredImages.map((item, index) => (
-                <Center key={index} width="100%">
-                  {/* Single unified container for both image and text */}
-                  <Box
-                    bg="white"
-                    borderRadius="xl"
-                    overflow="hidden"
-                    boxShadow="lg"
-                    width="100%"
-                    position="relative"
-                  >
-                    <Skeleton isLoaded={!!item.image}>
-                      {/* Full container for the image */}
+            {loading ? (
+              <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={8} width="100%">
+                {[...Array(4)].map((_, index) => (
+                  <Skeleton key={index} height="300px" width="100%" />
+                ))}
+              </SimpleGrid>
+            ) : (
+              <SimpleGrid
+                columns={{ base: 1, sm: 2 }}
+                spacing={8}
+                width="100%"
+                justifyContent="center"
+              >
+                {data.featuredImages.map((item, index) => (
+                  <Center key={index} width="100%">
+                    <Box
+                      bg="white"
+                      borderRadius="xl"
+                      overflow="hidden"
+                      boxShadow="lg"
+                      width="100%"
+                      position="relative"
+                    >
                       <Box
                         width="100%"
                         height="0"
-                        paddingBottom="75%" // Adjusted aspect ratio
+                        paddingBottom="75%"
                         position="relative"
                       >
-                        {/* Image container */}
                         <Box
                           position="absolute"
                           top="0"
@@ -186,10 +161,10 @@ const HomePage = () => {
                             style={{
                               position: "absolute",
                               top: "0",
-                              left:"0",
+                              left: "0",
                               width: "100%",
                               height: "100%",
-                              objectFit:"cover",
+                              objectFit: "cover",
                               borderRadius: "0.75rem",
                               transformOrigin: "center",
                             }}
@@ -197,8 +172,6 @@ const HomePage = () => {
                             transition={{ duration: 0.3, ease: "easeOut" }}
                           />
                         </Box>
-
-                        {/* Overlay for product info */}
                         <Box
                           position="absolute"
                           top="0"
@@ -224,23 +197,54 @@ const HomePage = () => {
                               {item.name}
                             </Text>
                             <Text fontSize="xl" color="white">
-                              {item.price}
+                              ₱{parseFloat(item.price).toFixed(2)}
                             </Text>
                           </Box>
                         </Box>
                       </Box>
-                    </Skeleton>
-                  </Box>
-                </Center>
-              ))}
-            </SimpleGrid>
+                    </Box>
+                  </Center>
+                ))}
+              </SimpleGrid>
+            )}
           </Center>
         </VStack>
 
         {/* Animated Product Rows */}
-        <AnimatedProductRow title="New Arrivals" items={products.newArrivals} />
-        <AnimatedProductRow title="Best Sellers" items={products.bestSellers} />
-        <AnimatedProductRow title="Switches" items={products.switches} />
+        {loading ? (
+          <VStack align="center" spacing={8} width="100%">
+            {[...Array(3)].map((_, index) => (
+              <SimpleGrid
+                key={index}
+                columns={{ base: 1, sm: 2, md: 3, lg: 5 }}
+                spacing={8}
+                width="100%"
+              >
+                {[...Array(5)].map((_, idx) => (
+                  <Skeleton key={idx} height="300px" width="100%" />
+                ))}
+              </SimpleGrid>
+            ))}
+          </VStack>
+        ) : (
+          <>
+            <AnimatedProductRow
+              title="New Arrivals"
+              items={data.newArrivals}
+              category="mixed"
+            />
+            <AnimatedProductRow
+              title="Best Sellers"
+              items={data.bestSellers}
+              category="keyboards"
+            />
+            <AnimatedProductRow
+              title="Switches"
+              items={data.switches}
+              category="switches"
+            />
+          </>
+        )}
       </Flex>
     </Box>
   );

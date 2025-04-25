@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-// Mock data (replace with MongoDB if using)
 const keyboards = [
   {
     id: 1,
@@ -11,6 +10,15 @@ const keyboards = [
     altImage: "/assets/altImg/rainy75Alt.png",
     availability: "in-stock",
     brand: "Akko",
+    type: "Mechanical",
+    description: "Compact 75% keyboard with customizable RGB and hot-swap switches.",
+    attributes: {
+      Size: "75%",
+      Connection: "Wired/Wireless",
+      "Hot-Swappable": "Yes",
+      RGB: "Per-key",
+      "Case Material": "Aluminum",
+    },
   },
   {
     id: 2,
@@ -20,6 +28,15 @@ const keyboards = [
     altImage: "/assets/altImg/retrorainbowAlt.png",
     availability: "in-stock",
     brand: "Gateron",
+    type: "Mechanical",
+    description: "Retro-styled keyboard with vibrant keycaps and smooth typing.",
+    attributes: {
+      Size: "TKL",
+      Connection: "Wired",
+      "Hot-Swappable": "No",
+      RGB: "None",
+      "Case Material": "Plastic",
+    },
   },
   {
     id: 3,
@@ -29,249 +46,472 @@ const keyboards = [
     altImage: "/assets/altImg/magnum65Alt.png",
     availability: "out-of-stock",
     brand: "Akko",
+    type: "Mechanical",
+    description: "65% keyboard with premium build and gasket mount design.",
+    attributes: {
+      Size: "65%",
+      Connection: "Wired",
+      "Hot-Swappable": "Yes",
+      RGB: "Per-key",
+      "Case Material": "Aluminum",
+    },
   },
   {
     id: 4,
-    name: "Magnum65",
-    price: 6500.00,
-    image: "/assets/magnum65.png",
-    altImage: "/assets/altImg/magnum65Alt.png",
-    availability: "out-of-stock",
-    brand: "Akko",
+    name: "Tofu60 Redux Kit",
+    price: 7800.00,
+    image: "/assets/tofu60.png",
+    altImage: "/assets/altImg/tofu60Alt.png",
+    availability: "in-stock",
+    brand: "KBDFans",
+    type: "Mechanical",
+    description: "Compact 60% keyboard with aluminum case and hot-swap PCB.",
+    attributes: {
+      Size: "60%",
+      Connection: "Wired",
+      "Hot-Swappable": "Yes",
+      RGB: "Per-key",
+      "Case Material": "Aluminum",
+    },
   },
   {
     id: 5,
-    name: "Magnum65",
-    price: 6500.00,
-    image: "/assets/magnum65.png",
-    altImage: "/assets/altImg/magnum65Alt.png",
-    availability: "out-of-stock",
-    brand: "Akko",
+    name: "Margo",
+    price: 15100.00,
+    image: "/assets/margof.png",
+    altImage: "/assets/altImg/margoAlt.png",
+    availability: "in-stock",
+    brand: "Unknown",
+    type: "Mechanical",
+    description: "High-end mechanical keyboard with premium materials.",
+    attributes: {
+      Size: "Full-size",
+      Connection: "Wired/Wireless",
+      "Hot-Swappable": "Yes",
+      RGB: "Per-key",
+      "Case Material": "Polycarbonate",
+    },
   },
   {
     id: 6,
-    name: "Magnum65",
-    price: 6500.00,
-    image: "/assets/magnum65.png",
-    altImage: "/assets/altImg/magnum65Alt.png",
-    availability: "out-of-stock",
-    brand: "Akko",
+    name: "S9000",
+    price: 8500.00,
+    image: "/assets/S9000.png",
+    altImage: "/assets/altImg/S9000Alt.png",
+    availability: "in-stock",
+    brand: "Unknown",
+    type: "Mechanical",
+    description: "Sleek 65% keyboard with modern aesthetics.",
+    attributes: {
+      Size: "65%",
+      Connection: "Wired",
+      "Hot-Swappable": "Yes",
+      RGB: "Per-key",
+      "Case Material": "Aluminum",
+    },
   },
   {
     id: 7,
-    name: "Magnum65",
+    name: "KBD67 Lite R4",
     price: 6500.00,
-    image: "/assets/magnum65.png",
-    altImage: "/assets/altImg/magnum65Alt.png",
-    availability: "out-of-stock",
-    brand: "Akko",
+    image: "/assets/kbd67.png",
+    altImage: "/assets/altImg/kbd67Alt.png",
+    availability: "in-stock",
+    brand: "KBDfans",
+    type: "Mechanical",
+    description: "Lightweight 65% keyboard with polycarbonate case.",
+    attributes: {
+      Size: "65%",
+      Connection: "Wired",
+      "Hot-Swappable": "Yes",
+      RGB: "Per-key",
+      "Case Material": "Polycarbonate",
+    },
+  },
+];
+
+const switches = [
+  {
+    id: 1,
+    name: "Gateron Ink Black",
+    price: 300.00,
+    image: "/assets/inkblack.png",
+    altImage: "/assets/altImg/inkblackAlt.png",
+    availability: "in-stock",
+    brand: "Gateron",
+    type: "Linear",
+    description: "Smooth linear switches with deep sound profile.",
+    attributes: {
+      Type: "Linear",
+      "Actuation Force": "60g",
+      "Travel Distance": "4.0mm",
+      "Pre-Travel": "2.0mm",
+    },
+  },
+  {
+    id: 2,
+    name: "Cherry MX Red",
+    price: 250.00,
+    image: "/assets/mxred.png",
+    altImage: "/assets/altImg/mxredAlt.png",
+    availability: "in-stock",
+    brand: "Cherry",
+    type: "Linear",
+    description: "Classic linear switches with light actuation.",
+    attributes: {
+      Type: "Linear",
+      "Actuation Force": "45g",
+      "Travel Distance": "4.0mm",
+      "Pre-Travel": "2.0mm",
+    },
+  },
+  {
+    id: 3,
+    name: "Mount Tai HE Magnetic Switches",
+    price: 6500.00,
+    image: "/assets/mounttai.png",
+    altImage: "/assets/altImg/mounttaiAlt.png",
+    availability: "in-stock",
+    brand: "Unknown",
+    type: "Magnetic",
+    description: "Magnetic switches with smooth linear feel and consistent actuation.",
+    attributes: {
+      Type: "Linear",
+      "Actuation Force": "45g",
+      "Travel Distance": "4.0mm",
+      "Pre-Travel": "2.0mm",
+    },
+  },
+  {
+    id: 4,
+    name: "Skyline Magnetic Switches",
+    price: 6500.00,
+    image: "/assets/skyline.png",
+    altImage: "/assets/altImg/skylineAlt.png",
+    availability: "in-stock",
+    brand: "Unknown",
+    type: "Magnetic",
+    description: "High-performance magnetic switches for rapid response.",
+    attributes: {
+      Type: "Magnetic",
+      "Actuation Force": "50g",
+      "Travel Distance": "3.8mm",
+      "Pre-Travel": "1.8mm",
+    },
+  },
+  {
+    id: 5,
+    name: "Gateron Magnetic Jade",
+    price: 6500.00,
+    image: "/assets/magneticjade.png",
+    altImage: "/assets/altImg/magneticjadeAlt.png",
+    availability: "in-stock",
+    brand: "Gateron",
+    type: "Magnetic",
+    description: "Magnetic switches with unique tactile feedback.",
+    attributes: {
+      Type: "Tactile",
+      "Actuation Force": "55g",
+      "Travel Distance": "3.8mm",
+      "Pre-Travel": "2.0mm",
+    },
+  },
+  {
+    id: 6,
+    name: "MMD Princess Linear/Tactile Switches V2",
+    price: 6500.00,
+    image: "/assets/mmdprincess.png",
+    altImage: "/assets/altImg/mmdprincessAlt.png",
+    availability: "in-stock",
+    brand: "MMD",
+    type: "Linear/Tactile",
+    description: "Versatile switches with smooth linear or tactile options.",
+    attributes: {
+      Type: "Linear/Tactile",
+      "Actuation Force": "62g",
+      "Travel Distance": "4.0mm",
+      "Pre-Travel": "2.0mm",
+    },
+  },
+  {
+    id: 7,
+    name: "Cherry Black MX Hyperglide",
+    price: 6500.00,
+    image: "/assets/cherrymxblack.png",
+    altImage: "/assets/altImg/cherrymxblackAlt.png",
+    availability: "in-stock",
+    brand: "Cherry",
+    type: "Switch",
+    description: "Heavy linear switches with smooth hyperglide technology.",
+    attributes: {
+      Type: "Linear",
+      "Actuation Force": "60g",
+      "Travel Distance": "4.0mm",
+      "Pre-Travel": "2.0mm",
+    },
   },
   {
     id: 8,
-    name: "Magnum65",
-    price: 6500.00,
-    image: "/assets/magnum65.png",
-    altImage: "/assets/altImg/magnum65Alt.png",
-    availability: "out-of-stock",
-    brand: "Akko",
+    name: "Gateron Yellow Pro",
+    price: 2500.00,
+    image: "/assets/gateron.png",
+    altImage: "/assets/altImg/gateronAlt.png",
+    availability: "in-stock",
+    brand: "Gateron",
+    type: "Linear",
+    description: "Budget-friendly smooth linear switches, factory lubed.",
+    attributes: {
+      Type: "Linear",
+      "Actuation Force": "50g",
+      "Travel Distance": "4.0mm",
+      "Pre-Travel": "2.0mm",
+    },
   },
   {
     id: 9,
-    name: "Magnum65",
-    price: 6500.00,
-    image: "/assets/magnum65.png",
-    altImage: "/assets/altImg/magnum65Alt.png",
+    name: "Holy Panda X",
+    price: 4800.00,
+    image: "/assets/holypanda.png",
+    altImage: "/assets/altImg/holypandaAlt.png",
     availability: "out-of-stock",
-    brand: "Gateron",
+    brand: "Drop",
+    type: "Tactile",
+    description: "Premium tactile switches with pronounced tactile bump.",
+    attributes: {
+      Type: "Tactile",
+      "Actuation Force": "67g",
+      "Travel Distance": "3.8mm",
+      "Pre-Travel": "2.2mm",
+    },
   },
+];
+
+const keycaps = [
   {
-    id: 10,
-    name: "Retro Rainbow",
-    price: 6500.00,
-    image: "/assets/retro.png",
-    altImage: "/assets/altImg/retrorainbowAlt.png",
+    id: 1,
+    name: "Akko Neon",
+    price: 1200.00,
+    image: "/assets/neon.png",
+    altImage: "/assets/altImg/neonAlt.png",
     availability: "in-stock",
-    brand: "Gateron",
+    brand: "Akko",
+    type: "Cherry Profile",
+    description: "Vibrant neon-themed keycaps with Cherry profile.",
+    attributes: {
+      Profile: "Cherry",
+      Material: "PBT Dye-Sub",
+      "Layout Compatibility": "60%, 65%, TKL, Full-size",
+      "Stem Type": "Cherry MX",
+    },
   },
   {
-    id: 11,
-    name: "Magnum65",
-    price: 6500.00,
-    image: "/assets/magnum65.png",
-    altImage: "/assets/altImg/magnum65Alt.png",
+    id: 2,
+    name: "GMK Laser",
+    price: 1500.00,
+    image: "/assets/laser.png",
+    altImage: "/assets/altImg/laserAlt.png",
     availability: "out-of-stock",
-    brand: "Gateron",
+    brand: "GMK",
+    type: "Cherry Profile",
+    description: "Premium DSA profile keycaps with excellent texture.",
+    attributes: {
+      Profile: "DSA",
+      Material: "PBT Dye-Sub",
+      "Layout Compatibility": "65%, 75%, TKL, Full-size",
+      "Stem Type": "Cherry MX",
+    },
+  },
+  {
+    id: 3,
+    name: "PBTFANS Ronin",
+    price: 6500.00,
+    image: "/assets/ronin.png",
+    altImage: "/assets/altImg/roninAlt.png",
+    availability: "in-stock",
+    brand: "PBTFANS",
+    type: "Cherry Profile",
+    description: "High-end Cherry profile keycaps with vibrant colorways.",
+    attributes: {
+      Profile: "Cherry",
+      Material: "PBT Dye-Sub",
+      "Layout Compatibility": "60%, 65%, TKL",
+      "Stem Type": "Cherry MX",
+    },
+  },
+  {
+    id: 4,
+    name: "Electronic Pet",
+    price: 6500.00,
+    image: "/assets/electronicpet.png",
+    altImage: "/assets/altImg/electronicpetAlt.png",
+    availability: "out-of-stock",
+    brand: "Unknown",
+    type: "SA Profile",
+    description: "Novelty keycap set with electronic pet theme and SA profile.",
+    attributes: {
+      Profile: "SA",
+      Material: "ABS",
+      "Layout Compatibility": "60%, 65%",
+      "Stem Type": "Cherry MX",
+    },
   },
 ];
-  const keycaps = [
-    {
-      id: 1,
-      name: "Rainy75",
-      price: 6500.00,
-      image: "/assets/rainy75.png",
-      altImage: "/assets/altImg/rainy75Alt.png",
-      availability: "in-stock",
-      brand: "Akko",
+
+const others = [
+  {
+    id: 1,
+    name: "Desk Mat",
+    price: 800.00,
+    image: "/assets/deskmat.png",
+    altImage: "/assets/altImg/deskmatAlt.png",
+    availability: "in-stock",
+    brand: "Generic",
+    type: "Accessory",
+    description: "Large desk mat with smooth surface for keyboard and mouse.",
+    attributes: {
+      Type: "Desk Mat",
+      Compatibility: "Universal",
+      Material: "Cloth/Rubber",
     },
-    {
-      id: 2,
-      name: "Retro Rainbow",
-      price: 6500.00,
-      image: "/assets/retro.png",
-      altImage: "/assets/altImg/retrorainbowAlt.png",
-      availability: "in-stock",
-      brand: "Gateron",
+  },
+  {
+    id: 2,
+    name: "Wrist Rest",
+    price: 500.00,
+    image: "/assets/wristrest.png",
+    altImage: "/assets/altImg/wristrestAlt.png",
+    availability: "in-stock",
+    brand: "Generic",
+    type: "Accessory",
+    description: "Ergonomic wrist rest for comfortable typing.",
+    attributes: {
+      Type: "Wrist Rest",
+      Compatibility: "60%, 65%, TKL, Full-size",
+      Material: "Memory Foam",
     },
-    {
-      id: 3,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Akko",
+  },
+  {
+    id: 3,
+    name: "Electronic Pet",
+    price: 6500.00,
+    image: "/assets/electronicpet.png",
+    altImage: "/assets/altImg/electronicpetAlt.png",
+    availability: "in-stock",
+    brand: "Unknown",
+    type: "Accessory",
+    description: "Interactive electronic pet accessory for desk setups.",
+    attributes: {
+      Type: "Novelty",
+      Compatibility: "Universal",
+      Material: "Plastic",
     },
-    {
-      id: 4,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Akko",
+  },
+  {
+    id: 4,
+    name: "Krytox 205g0",
+    price: 850.00,
+    image: "/assets/krytox.png",
+    altImage: "/assets/altImg/krytoxAlt.png",
+    availability: "in-stock",
+    brand: "Krytox",
+    type: "Switch Lubricant",
+    description: "Premium switch lubricant for smoother key action.",
+    attributes: {
+      Type: "Switch Lubricant",
+      Compatibility: "All switches",
+      Material: "PFPE/PTFE",
     },
-    {
-      id: 5,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Akko",
+  },
+  {
+    id: 5,
+    name: "Coiled Aviator Cable",
+    price: 1500.00,
+    image: "/assets/cable.png",
+    altImage: "/assets/altImg/cableAlt.png",
+    availability: "in-stock",
+    brand: "Unknown",
+    type: "Cable",
+    description: "Custom coiled cable with aviator connector and stylish sleeve.",
+    attributes: {
+      Type: "Cable",
+      Compatibility: "USB-C keyboards",
+      Material: "Braided Nylon",
     },
-    {
-      id: 6,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Akko",
+  },
+  {
+    id: 6,
+    name: "AEBoards Staebies V2.1 Stabilizers",
+    price: 6500.00,
+    image: "/assets/stabilizers.png",
+    altImage: "/assets/altImg/stabilizersAlt.png",
+    availability: "in-stock",
+    brand: "AEBoards",
+    type: "Stabilizer",
+    description: "High-quality stabilizers for smooth key action.",
+    attributes: {
+      Type: "Stabilizer",
+      Compatibility: "Cherry-style keyboards",
+      Material: "Plastic/Metal",
     },
-    {
-      id: 7,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Akko",
-    },
-    {
-      id: 8,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Akko",
-    },
-    {
-      id: 9,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Gateron",
-    },
-    {
-      id: 10,
-      name: "Retro Rainbow",
-      price: 6500.00,
-      image: "/assets/retro.png",
-      altImage: "/assets/altImg/retrorainbowAlt.png",
-      availability: "in-stock",
-      brand: "Gateron",
-    },
-    {
-      id: 11,
-      name: "Magnum65",
-      price: 6500.00,
-      image: "/assets/magnum65.png",
-      altImage: "/assets/altImg/magnum65Alt.png",
-      availability: "out-of-stock",
-      brand: "Gateron",
-    },
+  },
 ];
 
-router.get('/keyboards', (req, res) => {
-  try {
-    const { minPrice, maxPrice, availability, brand } = req.query;
-    let filteredKeyboards = [...keyboards];
+const categories = { keyboards, switches, keycaps, others };
 
-    // Only apply filters if parameters are valid
+router.get('/:category', (req, res) => {
+  try {
+    let { category } = req.params;
+    const { minPrice, maxPrice, availability, brand } = req.query;
+
+    // Map 'accessories' to 'others'
+    if (category === 'accessories') {
+      category = 'others';
+    }
+
+    if (!categories[category]) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    let items = [...categories[category]];
+
     if (minPrice && minPrice !== '' && !isNaN(parseFloat(minPrice))) {
-      filteredKeyboards = filteredKeyboards.filter(
-        (item) => item.price >= parseFloat(minPrice)
-      );
+      items = items.filter((item) => item.price >= parseFloat(minPrice));
     }
     if (maxPrice && maxPrice !== '' && !isNaN(parseFloat(maxPrice))) {
-      filteredKeyboards = filteredKeyboards.filter(
-        (item) => item.price <= parseFloat(maxPrice)
-      );
+      items = items.filter((item) => item.price <= parseFloat(maxPrice));
     }
     if (availability && availability !== '') {
-      filteredKeyboards = filteredKeyboards.filter(
-        (item) => item.availability === availability
-      );
+      items = items.filter((item) => item.availability === availability);
     }
     if (brand && brand !== '') {
-      filteredKeyboards = filteredKeyboards.filter(
-        (item) => item.brand.toLowerCase() === brand.toLowerCase()
-      );
+      items = items.filter((item) => item.brand.toLowerCase() === brand.toLowerCase());
     }
 
-    console.log('Returning keyboards:', filteredKeyboards);
-    res.json(filteredKeyboards);
+    console.log(`Returning ${category}:`, items);
+    res.json(items);
   } catch (error) {
-    console.error('Error in /keyboards route:', error);
+    console.error(`Error in /${req.params.category} route:`, error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-
-router.get('/keycaps', (req, res) => {
+router.get('/:category/:id', (req, res) => {
   try {
-    const { minPrice, maxPrice, availability, brand } = req.query;
-    let filteredKeycaps = [...keycaps];
-
-    // Only apply filters if parameters are valid
-    if (minPrice && minPrice !== '' && !isNaN(parseFloat(minPrice))) {
-      filteredKeycaps = filteredKeycaps.filter(
-        (item) => item.price >= parseFloat(minPrice)
-      );
+    let { category, id } = req.params;
+    if (category === 'accessories') {
+      category = 'others';
     }
-    if (maxPrice && maxPrice !== '' && !isNaN(parseFloat(maxPrice))) {
-      filteredKeycaps = filteredKeycaps.filter(
-        (item) => item.price <= parseFloat(maxPrice)
-      );
+    if (!categories[category]) {
+      return res.status(404).json({ error: 'Category not found' });
     }
-    if (availability && availability !== '') {
-      filteredKeycaps = filteredKeycaps.filter(
-        (item) => item.availability === availability
-      );
+    const product = categories[category].find((item) => item.id === parseInt(id));
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
     }
-    if (brand && brand !== '') {
-      filteredKeycaps = filteredKeycaps.filter(
-        (item) => item.brand.toLowerCase() === brand.toLowerCase()
-      );
-    }
-
-    console.log('Returning keycaps:', filteredKeycaps);
-    res.json(filteredKeycaps);
+    console.log(`Returning ${category} product:`, product);
+    res.json(product);
   } catch (error) {
-    console.error('Error in /keyboards route:', error);
+    console.error(`Error in /${req.params.category}/:id route:`, error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

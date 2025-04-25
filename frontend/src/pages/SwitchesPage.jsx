@@ -8,158 +8,76 @@ import {
   Input,
   Button,
   Center,
+  Skeleton,
 } from "@chakra-ui/react";
 import {
-  AnimatedProductRow,
-  ProductBox,
-} from "../components/ProductComponents";
+AnimatedProductRow,} from "../components/ProductComponents";
+import { useEffect, useState } from "react";
 // Placeholder data for switches (replace with database data later)
-const switches = [
-  {
-    name: "Mount Tai HE Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/mounttai.png",
-    altImage: "src/assets/altImg/mounttaiAlt.png",
-  },
-  {
-    name: "Skyline Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/skyline.png",
-    altImage: "src/assets/altImg/skylineAlt.png",
-  },
-  {
-    name: "Cherry Black MX Hyperglide",
-    price: "₱6500.00",
-    image: "src/assets/cherrymxblack.png",
-    altImage: "src/assets/altImg/cherrymxblackAlt.png",
-  },
-  {
-    name: "Skyline Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/skyline.png",
-    altImage: "src/assets/altImg/skylineAlt.png",
-  },
-  {
-    name: "Gateron Magnetic Jade",
-    price: "₱6500.00",
-    image: "src/assets/magneticjade.png",
-    altImage: "src/assets/altImg/magneticjadeAlt.png",
-  },
-  {
-    name: "MMD Princess Linear/Tactile Switches V2",
-    price: "₱6500.00",
-    image: "src/assets/mmdprincess.png",
-    altImage: "src/assets/altImg/mmdprincessAlt.png",
-  },
-  {
-    name: "Mount Tai HE Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/mounttai.png",
-    altImage: "src/assets/altImg/mounttaiAlt.png",
-  },
-  {
-    name: "Cherry Black MX Hyperglide",
-    price: "₱6500.00",
-    image: "src/assets/cherrymxblack.png",
-    altImage: "src/assets/altImg/cherrymxblackAlt.png",
-  },
-  {
-    name: "Skyline Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/skyline.png",
-    altImage: "src/assets/altImg/skylineAlt.png",
-  },
-  {
-    name: "Gateron Magnetic Jade",
-    price: "₱6500.00",
-    image: "src/assets/magneticjade.png",
-    altImage: "src/assets/altImg/magneticjadeAlt.png",
-  },
-  {
-    name: "MMD Princess Linear/Tactile Switches V2",
-    price: "₱6500.00",
-    image: "src/assets/mmdprincess.png",
-    altImage: "src/assets/altImg/mmdprincessAlt.png",
-  },
-  {
-    name: "Mount Tai HE Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/mounttai.png",
-    altImage: "src/assets/altImg/mounttaiAlt.png",
-  },
-  {
-    name: "Skyline Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/skyline.png",
-    altImage: "src/assets/altImg/skylineAlt.png",
-  },
-  {
-    name: "Cherry Black MX Hyperglide",
-    price: "₱6500.00",
-    image: "src/assets/cherrymxblack.png",
-    altImage: "src/assets/altImg/cherrymxblackAlt.png",
-  },
-  {
-    name: "Skyline Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/skyline.png",
-    altImage: "src/assets/altImg/skylineAlt.png",
-  },
-  {
-    name: "Gateron Magnetic Jade",
-    price: "₱6500.00",
-    image: "src/assets/magneticjade.png",
-    altImage: "src/assets/altImg/magneticjadeAlt.png",
-  },
-  {
-    name: "MMD Princess Linear/Tactile Switches V2",
-    price: "₱6500.00",
-    image: "src/assets/mmdprincess.png",
-    altImage: "src/assets/altImg/mmdprincessAlt.png",
-  },
-  {
-    name: "Mount Tai HE Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/mounttai.png",
-    altImage: "src/assets/altImg/mounttaiAlt.png",
-  },
-  {
-    name: "Cherry Black MX Hyperglide",
-    price: "₱6500.00",
-    image: "src/assets/cherrymxblack.png",
-    altImage: "src/assets/altImg/cherrymxblackAlt.png",
-  },
-  {
-    name: "Skyline Magnetic Switches",
-    price: "₱6500.00",
-    image: "src/assets/skyline.png",
-    altImage: "src/assets/altImg/skylineAlt.png",
-  },
-  {
-    name: "Gateron Magnetic Jade",
-    price: "₱6500.00",
-    image: "src/assets/magneticjade.png",
-    altImage: "src/assets/altImg/magneticjadeAlt.png",
-  },
-  {
-    name: "MMD Princess Linear/Tactile Switches V2",
-    price: "₱6500.00",
-    image: "src/assets/mmdprincess.png",
-    altImage: "src/assets/altImg/mmdprincessAlt.png",
-  },
-];
+
 
 const SwitchesPage = () => {
+  const [switches, setSwitches] = useState([]);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [availability, setAvailability] = useState("");
+  const [brand, setBrand] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchSwitches = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const queryParamsObj = {};
+      if (minPrice && minPrice !== "") queryParamsObj.minPrice = minPrice;
+      if (maxPrice && maxPrice !== "") queryParamsObj.maxPrice = maxPrice;
+      if (availability && availability !== "")
+        queryParamsObj.availability = availability;
+      if (brand && brand !== "") queryParamsObj.brand = brand;
+
+      const queryParams = new URLSearchParams(queryParamsObj).toString();
+      const url = queryParams
+        ? `/api/switches?${queryParams}&_t=${Date.now()}`
+        : `/api/switches?_t=${Date.now()}`;
+
+      console.log("Fetching switches with URL:", url);
+      const response = await fetch(url);
+      console.log("Response headers:", [...response.headers.entries()]);
+      if (!response.ok) {
+        const text = await response.text();
+        console.log("Response status:", response.status);
+        console.log("Response error text:", text.slice(0, 100));
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Fetched switches:", data);
+      setSwitches(data);
+    } catch (error) {
+      console.error("Error fetching switches:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSwitches();
+  }, [minPrice, maxPrice, availability, brand]);
+
+  const handleApplyFilters = () => {
+    fetchSwitches();
+  };
+
   return (
     <Box h="calc(100vh - 120px)" overflowY="auto" bg="gray.150">
       <Flex
         direction={{ base: "column", md: "row" }}
-        maxW="1400px"
+        maxW="auto"
         mx="auto"
         py={8}
         px={4}
       >
-        {/* Sidebar: Filter Panel */}
         <Box
           w={{ base: "100%", md: "250px" }}
           mb={{ base: 4, md: 0 }}
@@ -171,7 +89,6 @@ const SwitchesPage = () => {
           pr={{ md: 4 }}
         >
           <VStack align="start" spacing={4}>
-            {/* Price Range Filter */}
             <Text fontSize="md" fontWeight="bold" color="black">
               Price Range
             </Text>
@@ -182,52 +99,76 @@ const SwitchesPage = () => {
                 color="black"
                 mr={2}
                 _placeholder={{ color: "gray.500" }}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
               />
               <Input
                 placeholder="MAX"
                 bg="white"
                 color="black"
                 _placeholder={{ color: "gray.500" }}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
               />
             </Flex>
             <Button
-                bg="gray.700"
-                color="white"
-                w="100%"
-                _hover={{ bg: "gray.900" }}
-              >
-                Apply
-              </Button>
-
-            {/* Availability Filter */}
+              bg="gray.700"
+              color="white"
+              w="100%"
+              _hover={{ bg: "gray.900" }}
+              onClick={handleApplyFilters}
+            >
+              Apply
+            </Button>
             <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
               Availability
             </Text>
-            <Select bg="white" color="black">
+            <Select
+              bg="white"
+              color="black"
+              value={availability}
+              onChange={(e) => setAvailability(e.target.value)}
+            >
               <option value="">Select</option>
               <option value="in-stock">In Stock</option>
               <option value="out-of-stock">Out of Stock</option>
             </Select>
-
-            {/* Brand Filter */}
             <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
               Brand
             </Text>
-            <Select bg="white" color="black">
+            <Select
+              bg="white"
+              color="black"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+            >
               <option value="">Select</option>
               <option value="akko">Akko</option>
               <option value="gateron">Gateron</option>
             </Select>
           </VStack>
         </Box>
-
-        {/* Main Content: Product Grid */}
-        <Box ml="250px" p={4}>
-          <AnimatedProductRow title="Switches" items={switches} />
+        <Box ml={{ base: 0, md: "250px" }} p={4}>
+          {error ? (
+            <Text color="red.500">Error: {error}</Text>
+          ) : loading ? (
+            <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 5 }} spacing={8}>
+              {[...Array(5)].map((_, index) => (
+                <Box key={index}>
+                  <Skeleton height="200px" />
+                  <Skeleton height="20px" mt={3} />
+                  <Skeleton height="20px" mt={1} />
+                </Box>
+              ))}
+            </SimpleGrid>
+          ) : switches.length === 0 ? (
+            <Text>No switches found with the selected filters.</Text>
+          ) : (
+            <AnimatedProductRow title="Switches" items={switches} category="switches" />
+          )}
         </Box>
       </Flex>
     </Box>
   );
 };
-
 export default SwitchesPage;

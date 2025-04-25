@@ -8,16 +8,17 @@ import {
 } from "@chakra-ui/react";
 import { motion, useAnimation } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 const MotionBox = motion(Box);
 const MotionImg = motion.img;
 
-export const ProductBox = ({ item, index }) => {
+export const ProductBox = ({ item, index, category }) => {
   const [isHovered, setIsHovered] = useState(false);
   const controls = useAnimation();
   const ref = useRef(null);
 
-  console.log('ProductBox item:', item);
+  console.log("ProductBox item:", item);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -40,111 +41,133 @@ export const ProductBox = ({ item, index }) => {
     };
   }, [controls]);
 
-  if (!item || !item.name || !item.image || !item.altImage) {
-    console.warn('Invalid item data:', item);
+  if (
+    !item ||
+    !item.name ||
+    !item.image ||
+    !item.altImage ||
+    !item.id ||
+    !category
+  ) {
+    console.warn("Invalid item data or category:", item, category);
     return <Text>Invalid item data</Text>;
   }
 
   return (
-    <MotionBox
-      ref={ref}
-      key={index}
-      initial="hidden"
-      animate={controls}
-      variants={{
-        hidden: { opacity: 0, y: 50 },
-        visible: { opacity: 1, y: 0 },
-      }}
-      transition={{ duration: 0.3, delay: index * 0.1 }}
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      minWidth="200px" // Fix image size
-      onHoverStart={() => setIsHovered(true)} // Restore hover
-      onHoverEnd={() => setIsHovered(false)} // Restore hover
-    >
-      <Center width="100%">
-        <Box
-          bg="white"
-          borderRadius="xl"
-          overflow="hidden"
-          boxShadow="lg"
-          width="100%"
-          position="relative"
-        >
-          <Skeleton isLoaded={!!item.image && !!item.altImage}>
-            <Box
-              width="100%"
-              height="0"
-              paddingBottom="100%"
-              position="relative"
-              minWidth="200px" // Fix image size
-              minHeight="200px" // Fix image size
-            >
+    <Link to={`/${category}/${item.id}`} style={{ textDecoration: "none" }}>
+      <MotionBox
+        ref={ref}
+        key={index}
+        initial="hidden"
+        animate={controls}
+        variants={{
+          hidden: { opacity: 0, y: 50 },
+          visible: { opacity: 1, y: 0 },
+        }}
+        transition={{ duration: 0.3, delay: index * 0.1 }}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        minWidth="200px"
+        onHoverStart={() => {
+          console.log("Hover start", item.name);
+          setIsHovered(true);
+        }}
+        onHoverEnd={() => {
+          console.log("Hover end", item.name);
+          setIsHovered(false);
+        }}
+        cursor="pointer"
+      >
+        <Center width="100%">
+          <Box
+            bg="white"
+            borderRadius="xl"
+            overflow="hidden"
+            boxShadow="lg"
+            width="100%"
+            position="relative"
+          >
+            <Skeleton isLoaded={!!item.image && !!item.altImage}>
               <Box
-                position="absolute"
-                top="0"
-                left="0"
                 width="100%"
-                height="100%"
-                overflow="hidden"
+                height="0"
+                paddingBottom="100%"
+                position="relative"
+                minWidth="300px"
+                minHeight="300px"
               >
-                <MotionImg
-                  src={item.image}
-                  alt={item.name}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: "0.75rem",
-                    position: "absolute",
-                    top: "0",
-                    left: "0",
-                  }}
-                  animate={{ opacity: isHovered ? 0 : 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-                <MotionImg
-                  src={item.altImage}
-                  alt={`${item.name} alternate`}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: "0.75rem",
-                    position: "absolute",
-                    top: "0",
-                    left: "0",
-                  }}
-                  animate={{ opacity: isHovered ? 1 : 0 }}
-                  transition={{ duration: 0.3 }}
-                />
+                <Box
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  width="100%"
+                  height="100%"
+                  overflow="hidden"
+                >
+                  <MotionImg
+                    src={item.image}
+                    alt={item.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "0.75rem",
+                      position: "absolute",
+                      top: "0",
+                      left: "0",
+                    }}
+                    animate={{
+                      opacity: isHovered ? 0 : 1,
+                      scale: isHovered ? 1.04 : 1,
+                    }}
+                    transition={{ duration: 0.3 }}
+                  />
+                  <MotionImg
+                    src={item.altImage}
+                    alt={`${item.name} alternate`}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "0.75rem",
+                      position: "absolute",
+                      top: "0",
+                      left: "0",
+                    }}
+                    animate={{
+                      opacity: isHovered ? 1 : 0,
+                      scale: isHovered ? 1.04 : 1,
+                    }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </Box>
               </Box>
-            </Box>
-          </Skeleton>
+            </Skeleton>
+          </Box>
+        </Center>
+        <Box mt={3} textAlign="center" width="100%">
+          <Text fontSize="sm" fontWeight="0.75rem" color="black">
+            {item.name}
+          </Text>
+          <Text
+            fontSize="xs"
+            color={item.price ? "black" : "gray.500"}
+            mt={1}
+            fontStyle={item.price ? "normal" : "italic"}
+          >
+            {item.price == null || item.price === ""
+              ? "No price info"
+              : `₱${parseFloat(item.price).toFixed(2)}`}
+          </Text>
         </Box>
-      </Center>
-      <Box mt={3} textAlign="center" width="100%">
-        <Text fontSize="sm" fontWeight="0.75rem" color="black">
-          {item.name}
-        </Text>
-        <Text
-          fontSize="xs"
-          color={item.price ? "black" : "gray.500"}
-          mt={1}
-          fontStyle={item.price ? "normal" : "italic"}
-        >
-          {item.price == null || item.price === ""
-            ? "No price info"
-            : `₱${parseFloat(item.price).toFixed(2)}`}
-        </Text>
-      </Box>
-    </MotionBox>
+      </MotionBox>
+    </Link>
   );
 };
 
-export const AnimatedProductRow = ({ title, items }) => {
-  console.log('AnimatedProductRow items:', items);
+export const AnimatedProductRow = ({ title, items, category }) => {
+  console.log("AnimatedProductRow items:", items);
   const ref = useRef(null);
   const controls = useAnimation();
 
@@ -186,13 +209,14 @@ export const AnimatedProductRow = ({ title, items }) => {
           spacing={8}
           width="100%"
           justifyContent="center"
-          maxW="1200px" // Fix image size
+          maxW="auto"
         >
           {items.map((item, index) => (
             <ProductBox
               key={item.id || index}
               item={item}
               index={index}
+              category={category}
             />
           ))}
         </SimpleGrid>

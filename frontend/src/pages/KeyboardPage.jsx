@@ -71,7 +71,7 @@ const KeyboardPage = () => {
     <Box h="calc(100vh - 120px)" overflowY="auto" bg="gray.150">
       <Flex
         direction={{ base: "column", md: "row" }}
-        maxW="1400px"
+        maxW="auto"
         mx="auto"
         py={8}
         px={4}
@@ -87,7 +87,7 @@ const KeyboardPage = () => {
           pr={{ md: 4 }}
         >
           <VStack align="start" spacing={4}>
-            <Text fontSize="md" fontWeight="bold" color="black">
+            <Text fontSize="md" fontWeight="bold" color="white">
               Price Range
             </Text>
             <Flex w="100%">
@@ -162,7 +162,7 @@ const KeyboardPage = () => {
           ) : keyboards.length === 0 ? (
             <Text>No keyboards found with the selected filters.</Text>
           ) : (
-            <AnimatedProductRow title="Keyboards" items={keyboards} />
+            <AnimatedProductRow title="Keyboards" items={keyboards} category="keyboards" />
           )}
         </Box>
       </Flex>

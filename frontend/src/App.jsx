@@ -7,6 +7,7 @@ import SwitchesPage from './pages/SwitchesPage';
 import KeyboardPage from './pages/KeyboardPage';
 import OthersPage from './pages/OthersPage';
 import ComparePage from './pages/ComparePage';
+import ProductDetailPage from './pages/ProductDetailPage.jsx';
 
 const navItems = [
   { label: 'Home', href: '/' },
@@ -23,7 +24,7 @@ function App() {
     overflow="hidden" >
       
       <Navbar
-        logoText="No Cap"
+        logoText="NO CAP"
         navItems={navItems}
         style={{ position: 'sticky', top: 0, zIndex: 1000 }}
       />
@@ -35,7 +36,10 @@ function App() {
           <Route path="/keycaps" element={<KeyCapsPage />} />
           <Route path="/others" element={<OthersPage />} />
           <Route path="/compare" element={<ComparePage/>} />
+          <Route path="/:category/:id" element={<ProductDetailPage />} />
           <Route path="*" element={<div>404 - Page Not Found</div>} />
+
+       
         </Routes>
       </Box>
     </Box>

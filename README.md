@@ -13,7 +13,7 @@ npm install
 
 cd root
 
-npm instal
+npm install
 
 run: npm start
 

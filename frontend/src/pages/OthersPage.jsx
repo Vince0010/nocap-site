@@ -139,7 +139,7 @@ const OthersPage = () => {
             value={searchQuery}
             onChange={handleSearch}
             size="md"
-            borderRadius="xl"
+            borderRadius="md"
           />
           {searchQuery && (
             <InputRightElement>

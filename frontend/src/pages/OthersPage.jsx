@@ -9,48 +9,83 @@ import {
   Button,
   Center,
   Skeleton,
+  InputGroup,
+  InputLeftElement,
+  InputRightElement,
+  CloseButton,
+  Heading,
+  Grid,
+  GridItem,
 } from "@chakra-ui/react";
+import { SearchIcon } from "@chakra-ui/icons";
 import { AnimatedProductRow } from "../components/ProductComponents";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useDebounce } from "use-debounce";
+
 const OthersPage = () => {
   const [others, setOthers] = useState([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [availability, setAvailability] = useState("");
   const [brand, setBrand] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
 
   const fetchOthers = async () => {
     setLoading(true);
     setError(null);
     try {
       const queryParamsObj = {};
-      if (minPrice && minPrice !== "") queryParamsObj.minPrice = minPrice;
-      if (maxPrice && maxPrice !== "") queryParamsObj.maxPrice = maxPrice;
+      if (minPrice && minPrice !== "" && !isNaN(minPrice))
+        queryParamsObj.minPrice = minPrice;
+      if (maxPrice && maxPrice !== "" && !isNaN(maxPrice))
+        queryParamsObj.maxPrice = maxPrice;
       if (availability && availability !== "")
         queryParamsObj.availability = availability;
       if (brand && brand !== "") queryParamsObj.brand = brand;
+      if (debouncedSearchQuery && debouncedSearchQuery.trim())
+        queryParamsObj.search = debouncedSearchQuery.trim();
 
       const queryParams = new URLSearchParams(queryParamsObj).toString();
       const url = queryParams
         ? `/api/others?${queryParams}&_t=${Date.now()}`
         : `/api/others?_t=${Date.now()}`;
 
-      console.log("Fetching keyboards with URL:", url);
+      console.log("Fetching others with URL:", url);
       const response = await fetch(url);
       console.log("Response headers:", [...response.headers.entries()]);
       if (!response.ok) {
         const text = await response.text();
         console.log("Response status:", response.status);
         console.log("Response error text:", text.slice(0, 100));
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        throw new Error(`Failed to fetch accessories: ${response.status} ${text.slice(0, 100)}`);
       }
       const data = await response.json();
       console.log("Fetched others:", data);
-      setOthers(data);
+
+      // Validate data
+      const validData = data.filter(
+        (item) =>
+          item &&
+          typeof item.id === "number" &&
+          typeof item.name === "string" &&
+          item.name.trim() &&
+          typeof item.price === "number" &&
+          typeof item.image === "string" &&
+          typeof item.availability === "string" &&
+          typeof item.brand === "string"
+      );
+      if (validData.length < data.length) {
+        console.warn(
+          "Invalid accessory entries filtered out:",
+          data.filter((item) => !validData.includes(item))
+        );
+      }
+      setOthers(validData);
     } catch (error) {
-      console.error("Error fetching others:", error);
+      console.error("Error fetching accessories:", error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -59,111 +94,221 @@ const OthersPage = () => {
 
   useEffect(() => {
     fetchOthers();
-  }, [minPrice, maxPrice, availability, brand]);
+  }, [minPrice, maxPrice, availability, brand, debouncedSearchQuery]);
 
-  const handleApplyFilters = () => {
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+  };
+
+  const clearAllFilters = () => {
+    setMinPrice("");
+    setMaxPrice("");
+    setAvailability("");
+    setBrand("");
+    setSearchQuery("");
     fetchOthers();
   };
 
+  // Memoize others to stabilize rendering
+  const memoizedOthers = useMemo(() => {
+    console.log("Rendering others:", others);
+    return others;
+  }, [others]);
+
   return (
-    <Box h="calc(100vh - 120px)" overflowY="auto" bg="gray.150">
-      <Flex
-        direction={{ base: "column", md: "row" }}
-        maxW="auto"
-        mx="auto"
-        py={8}
-        px={4}
-      >
-        <Box
-          w={{ base: "100%", md: "250px" }}
-          mb={{ base: 4, md: 0 }}
-          position={{ md: "fixed" }}
-          top={{ md: "190px" }}
-          h={{ md: "calc(100vh - 120px)" }}
-          overflowY={{ md: "auto" }}
-          bg="gray.150"
-          pr={{ md: 4 }}
+    <Box h="calc(104vh - 120px)" overflowY="auto" bg="gray.30" px={4} py={8} maxW="auto" mx="auto">
+      <Heading as="h1" mb={6} color="gray.800" textAlign="center">
+        Accessories
+      </Heading>
+
+      {/* Search Bar - Now positioned above filters */}
+      <Flex mb={4} justify="space-between" wrap="wrap" gap={4}>
+        <InputGroup maxW={{ base: "100%", md: "350px" }}>
+          <InputLeftElement pointerEvents="none">
+            <SearchIcon color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search accessories..."
+            bg="white"
+            color="black"
+            borderColor="gray.300"
+            value={searchQuery}
+            onChange={handleSearch}
+            size="md"
+            borderRadius="xl"
+          />
+          {searchQuery && (
+            <InputRightElement>
+              <CloseButton size="sm" onClick={clearSearch} />
+            </InputRightElement>
+          )}
+        </InputGroup>
+
+        {/* Clear Filters Button - Positioned at the end */}
+        <Button
+          onClick={clearAllFilters}
+          colorScheme="gray"
+          ml={{ base: 0, md: "auto" }}
+          isDisabled={!searchQuery && !minPrice && !maxPrice && !availability && !brand}
         >
-          <VStack align="start" spacing={4}>
-            <Text fontSize="md" fontWeight="bold" color="black">
-              Price Range
-            </Text>
-            <Flex w="100%">
-              <Input
-                placeholder="MIN"
-                bg="white"
-                color="black"
-                mr={2}
-                _placeholder={{ color: "gray.500" }}
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-              />
-              <Input
-                placeholder="MAX"
-                bg="white"
-                color="black"
-                _placeholder={{ color: "gray.500" }}
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-              />
-            </Flex>
-            <Button
-              bg="gray.700"
-              color="white"
-              w="100%"
-              _hover={{ bg: "gray.900" }}
-              onClick={handleApplyFilters}
-            >
-              Apply
-            </Button>
-            <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
-              Availability
-            </Text>
-            <Select
+          Clear All
+        </Button>
+      </Flex>
+
+      {/* Filter Controls - Now horizontal layout */}
+      <Flex
+        mb={8}
+        direction={{ base: "column", md: "row" }}
+        align={{ base: "stretch", md: "center" }}
+        gap={4}
+        wrap="wrap"
+        p={4}
+        borderRadius="md"
+      >
+        {/* Price Range Controls */}
+        <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Price Range:</Text>
+          <Flex>
+            <Input
+              placeholder="MIN"
               bg="white"
               color="black"
-              value={availability}
-              onChange={(e) => setAvailability(e.target.value)}
-            >
-              <option value="">Select</option>
-              <option value="in-stock">In Stock</option>
-              <option value="out-of-stock">Out of Stock</option>
-            </Select>
-            <Text fontSize="md" fontWeight="bold" color="black" mt={4}>
-              Brand
-            </Text>
-            <Select
+              mr={2}
+              _placeholder={{ color: "gray.500" }}
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              type="number"
+              size="sm"
+              maxW="100px"
+              borderRadius="md"
+            />
+            <Input
+              placeholder="MAX"
               bg="white"
               color="black"
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-            >
-              <option value="">Select</option>
-              <option value="akko">Akko</option>
-              <option value="gateron">Gateron</option>
-            </Select>
-          </VStack>
+              _placeholder={{ color: "gray.500" }}
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              type="number"
+              size="sm"
+              maxW="100px"
+              borderRadius="md"
+            />
+          </Flex>
+        </Flex>
+
+        {/* Availability Dropdown */}
+        <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Availability:</Text>
+          <Select
+            bg="white"
+            color="black"
+            value={availability}
+            onChange={(e) => setAvailability(e.target.value)}
+            size="sm"
+            maxW="150px"
+            borderRadius="lg"
+          >
+            <option value="">All</option>
+            <option value="in-stock">In Stock</option>
+            <option value="out-of-stock">Out of Stock</option>
+          </Select>
+        </Flex>
+
+        {/* Brand Dropdown */}
+        <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Brand:</Text>
+          <Select
+            bg="white"
+            color="black"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            size="sm"
+            maxW="150px"
+            borderRadius="md"
+          >
+            <option value="">All</option>
+            <option value="Akko">Akko</option>
+            <option value="Gateron">Gateron</option>
+          </Select>
+        </Flex>
+      </Flex>
+
+      {/* Results Area */}
+      {error ? (
+        <Box
+          w="full"
+          mx="auto"
+          py={8}
+          px={6}
+          borderWidth="1px"
+          borderRadius="xl"
+          borderStyle="dashed"
+          borderColor="gray.300"
+          textAlign="center"
+          bg="gray.50"
+        >
+          <Text color="red.500" fontSize="lg">
+            {error}
+          </Text>
+          <Button
+            mt={4}
+            size="sm"
+            onClick={fetchOthers}
+            bg="gray.700"
+            color="white"
+            _hover={{ bg: "gray.900" }}
+            borderRadius="xl"
+          >
+            Retry
+          </Button>
         </Box>
-        <Box ml={{ base: 0, md: "250px" }} p={4}>
-          {error ? (
-            <Text color="red.500">Error: {error}</Text>
-          ) : loading ? (
-            <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 5 }} spacing={8}>
-              {[...Array(5)].map((_, index) => (
-                <Box key={index}>
-                  <Skeleton height="200px" />
-                  <Skeleton height="20px" mt={3} />
-                  <Skeleton height="20px" mt={1} />
-                </Box>
-              ))}
-            </SimpleGrid>
-          ) : others.length === 0 ? (
-            <Text>No keyboards found with the selected filters.</Text>
-          ) : (
-            <AnimatedProductRow title="Others" items={others} category={"others"} />
+      ) : loading ? (
+        <Grid
+          templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }}
+          gap={6}
+        >
+          {[...Array(8)].map((_, index) => (
+            <GridItem key={index}>
+              <Skeleton height="300px" width="100%" borderRadius="xl" />
+            </GridItem>
+          ))}
+        </Grid>
+      ) : memoizedOthers.length === 0 ? (
+        <Box
+          textAlign="center"
+          py={8}
+          px={6}
+          borderWidth="1px"
+          borderRadius="xl"
+          borderStyle="dashed"
+          borderColor="gray.300"
+          mx="auto"
+          maxW="auto"
+        >
+          <Text fontSize="lg" color="gray.500">
+            No accessories found with the selected filters.
+          </Text>
+          {(searchQuery || minPrice || maxPrice || availability || brand) && (
+            <Button
+              colorScheme="gray"
+              ml={{ base: 0, md: "auto" }}
+              onClick={clearAllFilters}
+              mt={4}
+            >
+              Clear All Filters
+            </Button>
           )}
         </Box>
-      </Flex>
+      ) : (
+        <Box mt={4}>
+          <AnimatedProductRow items={memoizedOthers} category="others" />
+        </Box>
+      )}
     </Box>
   );
 };

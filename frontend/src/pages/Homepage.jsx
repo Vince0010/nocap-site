@@ -99,7 +99,7 @@ const HomePage = () => {
 
   return (
     <Box
-      bg="#white"
+      bg="gray.30"
       px={{ base: 4, md: 8 }}
       py={8}
       overflowY="auto"
@@ -231,7 +231,7 @@ const HomePage = () => {
             <AnimatedProductRow
               title="New Arrivals"
               items={data.newArrivals}
-              category="mixed"
+              category={[data.newArrivals[0].category, data.newArrivals[1].category]}
             />
             <AnimatedProductRow
               title="Best Sellers"

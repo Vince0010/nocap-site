@@ -10,7 +10,6 @@ import {
   TabList,
   Tab,
 } from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
 import { Link, useLocation } from "react-router-dom";
 
 // Navbar Component with Props
@@ -88,26 +87,7 @@ const Navbar = ({ logoText = "", navItems = [], style = {} }) => {
           </Flex>
         </Flex>
 
-        {/* Search Bar - remains on the right */}
-        <InputGroup maxW="250px">
-          <Input
-            placeholder="Search for an item"
-            bg="white"
-            color="gray.800"
-            borderRadius="md"
-            fontSize="md"
-            _placeholder={{ color: "gray.500" }}
-          />
-          <InputRightElement>
-            <IconButton
-              aria-label="Search"
-              icon={<SearchIcon />}
-              size="md"
-              variant="ghost"
-              color="gray.500"
-            />
-          </InputRightElement>
-        </InputGroup>
+
       </Flex>
     </Box>
   );

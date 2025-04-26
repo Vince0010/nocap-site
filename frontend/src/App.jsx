@@ -8,6 +8,7 @@ import KeyboardPage from './pages/KeyboardPage';
 import OthersPage from './pages/OthersPage';
 import ComparePage from './pages/ComparePage';
 import ProductDetailPage from './pages/ProductDetailPage.jsx';
+import ResultPage from './pages/ResultPage.jsx';
 
 const navItems = [
   { label: 'Home', href: '/' },
@@ -37,6 +38,7 @@ function App() {
           <Route path="/others" element={<OthersPage />} />
           <Route path="/compare" element={<ComparePage/>} />
           <Route path="/:category/:id" element={<ProductDetailPage />} />
+          <Route path="/search" element={<ResultPage />} />
           <Route path="*" element={<div>404 - Page Not Found</div>} />
 
        

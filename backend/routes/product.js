@@ -461,7 +461,7 @@ const categories = { keyboards, switches, keycaps, others };
 router.get('/:category', (req, res) => {
   try {
     let { category } = req.params;
-    const { minPrice, maxPrice, availability, brand } = req.query;
+    const { minPrice, maxPrice, availability, brand, search } = req.query;
 
     // Map 'accessories' to 'others'
     if (category === 'accessories') {
@@ -472,19 +472,52 @@ router.get('/:category', (req, res) => {
       return res.status(404).json({ error: 'Category not found' });
     }
 
-    let items = [...categories[category]];
+    // Validate items
+    const validItems = categories[category].filter(
+      (item) =>
+        item &&
+        typeof item.id === 'number' &&
+        typeof item.name === 'string' &&
+        item.name.trim() &&
+        typeof item.price === 'number' &&
+        typeof item.image === 'string' &&
+        typeof item.availability === 'string' &&
+        ['in-stock', 'out-of-stock'].includes(item.availability) &&
+        typeof item.brand === 'string'
+    );
+    if (validItems.length < categories[category].length) {
+      console.warn(
+        `Invalid ${category} entries filtered out:`,
+        categories[category].filter((item) => !validItems.includes(item))
+      );
+    }
+
+    let items = [...validItems];
 
     if (minPrice && minPrice !== '' && !isNaN(parseFloat(minPrice))) {
       items = items.filter((item) => item.price >= parseFloat(minPrice));
+    } else if (minPrice) {
+      console.warn(`Invalid minPrice ignored for ${category}:`, minPrice);
     }
+
     if (maxPrice && maxPrice !== '' && !isNaN(parseFloat(maxPrice))) {
       items = items.filter((item) => item.price <= parseFloat(maxPrice));
+    } else if (maxPrice) {
+      console.warn(`Invalid maxPrice ignored for ${category}:`, maxPrice);
     }
-    if (availability && availability !== '') {
+
+    if (availability && ['in-stock', 'out-of-stock'].includes(availability)) {
       items = items.filter((item) => item.availability === availability);
+    } else if (availability) {
+      console.warn(`Invalid availability ignored for ${category}:`, availability);
     }
+
     if (brand && brand !== '') {
       items = items.filter((item) => item.brand.toLowerCase() === brand.toLowerCase());
+    }
+
+    if (search && search.trim()) {
+      items = items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
     }
 
     console.log(`Returning ${category}:`, items);

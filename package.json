@@ -10,6 +10,7 @@
         "concurrently": "^8.2.2"
     },
     "dependencies": {
-        "@fontsource/inter": "^5.2.5"
+        "@fontsource/inter": "^5.2.5",
+        "use-debounce": "^10.0.4"
     }
 }

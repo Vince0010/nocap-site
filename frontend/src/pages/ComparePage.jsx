@@ -23,15 +23,14 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightElement,
-  Alert,
-  AlertIcon,
   Center,
   Skeleton,
 } from "@chakra-ui/react";
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { SearchIcon, CloseIcon, InfoIcon } from "@chakra-ui/icons";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAnimation } from "framer-motion";
+import { useDebounce } from "use-debounce";
 import { AnimatedProductRow, ProductBox } from "../components/ProductComponents";
 
 // Product categories and their specific comparable attributes
@@ -46,75 +45,93 @@ const ComparePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("keycaps");
   const [comparedProducts, setComparedProducts] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
-  const [displayedProducts, setDisplayedProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const toast = useToast();
   const navigate = useNavigate();
   const controls = useAnimation();
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      setError(null);
-      setComparedProducts([]);
-      setSearchQuery("");
-      try {
-        const fetchCategory = selectedCategory === "accessories" ? "others" : selectedCategory;
-        const response = await fetch(`/api/${fetchCategory}`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${selectedCategory}`);
-        }
-        const data = await response.json();
-
-        // Map backend data to match ComparePage structure
-        const mappedProducts = data.map((product) => ({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          formattedPrice: product.price ? `₱${parseFloat(product.price).toFixed(2)}` : null,
-          image: product.image,
-          altImage: product.altImage,
-          attributes: product.attributes || {},
-          description: product.description || `Premium ${selectedCategory} product.`,
-          inStock: product.availability === "in-stock",
-        }));
-
-        setAvailableProducts(mappedProducts);
-        setDisplayedProducts(mappedProducts);
-        controls.start("visible");
-        console.log(`Fetched ${selectedCategory}:`, mappedProducts);
-      } catch (error) {
-        console.error(`Error fetching ${selectedCategory}:`, error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    setComparedProducts([]);
+    try {
+      const fetchCategory = selectedCategory === "accessories" ? "others" : selectedCategory;
+      const queryParamsObj = {};
+      if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+        queryParamsObj.search = debouncedSearchQuery.trim();
       }
-    };
+      const queryParams = new URLSearchParams(queryParamsObj).toString();
+      const url = queryParams
+        ? `/api/${fetchCategory}?${queryParams}&_t=${Date.now()}`
+        : `/api/${fetchCategory}?_t=${Date.now()}`;
 
+      console.log(`Fetching ${selectedCategory} with URL:`, url);
+      const response = await fetch(url);
+      console.log("Response headers:", [...response.headers.entries()]);
+      if (!response.ok) {
+        const text = await response.text();
+        console.log("Response status:", response.status);
+        console.log("Response error text:", text.slice(0, 100));
+        throw new Error(`Failed to fetch ${selectedCategory}: ${response.status} ${text.slice(0, 100)}`);
+      }
+      const data = await response.json();
+      console.log(`Fetched ${selectedCategory}:`, data);
+
+      // Validate data
+      const validData = data.filter(
+        (product) =>
+          product &&
+          typeof product.id === "number" &&
+          typeof product.name === "string" &&
+          product.name.trim() &&
+          typeof product.price === "number" &&
+          typeof product.image === "string" &&
+          typeof product.availability === "string"
+      );
+      if (validData.length < data.length) {
+        console.warn(
+          `Invalid ${selectedCategory} entries filtered out:`,
+          data.filter((product) => !validData.includes(product))
+        );
+      }
+
+      // Map backend data to match ComparePage structure
+      const mappedProducts = validData.map((product) => ({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        formattedPrice: product.price ? `₱${parseFloat(product.price).toFixed(2)}` : null,
+        image: product.image,
+        altImage: product.altImage,
+        attributes: product.attributes || {},
+        description: product.description || `Premium ${selectedCategory} product.`,
+        inStock: product.availability === "in-stock",
+      }));
+
+      setAvailableProducts(mappedProducts);
+      controls.start("visible");
+    } catch (error) {
+      console.error(`Error fetching ${selectedCategory}:`, error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, controls]);
+  }, [selectedCategory, debouncedSearchQuery, controls]);
 
   // Search functionality
   const handleSearch = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (!query.trim()) {
-      setDisplayedProducts(availableProducts);
-      return;
-    }
-
-    const filteredProducts = availableProducts.filter((product) =>
-      product.name.toLowerCase().includes(query.toLowerCase())
-    );
-    setDisplayedProducts(filteredProducts);
+    setSearchQuery(e.target.value);
   };
 
   const clearSearch = () => {
     setSearchQuery("");
-    setDisplayedProducts(availableProducts);
   };
 
   const handleAddToComparison = (productId) => {
@@ -152,10 +169,12 @@ const ComparePage = () => {
 
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
+    setSearchQuery(""); // Clear search on category change
   };
 
   const clearComparison = () => {
     setComparedProducts([]);
+    setSearchQuery("");
   };
 
   // Helper function to display product info or "No info" if not available
@@ -206,27 +225,16 @@ const ComparePage = () => {
     );
   });
 
-  if (error) {
-    return (
-      <Box bg="gray.150" px={4} py={8} maxW="1400px" mx="auto" minH="100vh">
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          Error: {error}
-        </Alert>
-      </Box>
-    );
-  }
+  // Memoize products to stabilize rendering
+  const memoizedProducts = useMemo(() => {
+    console.log(`Rendering ${selectedCategory}:`, availableProducts);
+    return availableProducts;
+  }, [availableProducts, selectedCategory]);
 
   return (
-    <Box  h="calc(105vh - 150px)"
-    overflowY="auto"
-    bg="gray.150"
-    px={4}
-    py={8}
-    maxW="auto"
-    mx="auto">
-      <Heading as="h1" mb={6} color="gray.800">
-        Product Comparison
+    <Box h="calc(104vh - 120px)" overflowY="auto" bg="gray.30" px={4} py={8} maxW="auto" mx="auto">
+      <Heading as="h1" mb={6} color="gray.800" textAlign="center">
+        Compare
       </Heading>
 
       {/* Category Selection and Search */}
@@ -263,6 +271,7 @@ const ComparePage = () => {
             value={searchQuery}
             onChange={handleSearch}
             borderColor="gray.300"
+            bg="white"
           />
           {searchQuery && (
             <InputRightElement>
@@ -275,7 +284,7 @@ const ComparePage = () => {
           onClick={clearComparison}
           colorScheme="gray"
           ml={{ base: 0, md: "auto" }}
-          isDisabled={comparedProducts.length === 0}
+          isDisabled={comparedProducts.length === 0 && !searchQuery}
         >
           Clear All
         </Button>
@@ -312,217 +321,261 @@ const ComparePage = () => {
         </Box>
       )}
 
-      {/* Products to Compare Section */}
-      <Box mb={8}>
-        <Heading as="h2" size="md" mb={4} color="gray.700">
-          Select Products to Compare
-        </Heading>
-
-        {loading ? (
-          <Grid
-            templateColumns={{
-              base: "repeat(1, 1fr)",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(3, 1fr)",
-              lg: "repeat(4, 1fr)",
-            }}
-            gap={6}
-          >
-            {[...Array(8)].map((_, index) => (
-              <GridItem key={index}>
-                <Skeleton height="300px" width="100%" borderRadius="xl" />
-              </GridItem>
-            ))}
-          </Grid>
-        ) : displayedProducts.length > 0 ? (
-          <Grid
-            templateColumns={{
-              base: "repeat(1, 1fr)",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(3, 1fr)",
-              lg: "repeat(4, 1fr)",
-            }}
-            gap={6}
-          >
-            {displayedProducts.map((product, index) => (
-              <GridItem key={product.id}>
-                <Box position="relative">
-                  <ProductBox
-                    item={product}
-                    index={index}
-                    category={selectedCategory}
-                    controls={controls}
-                  />
-                  <Box position="absolute" top={2} right={2}>
-                    {!product.inStock && (
-                      <Badge colorScheme="red" mb={2}>
-                        Out of Stock
-                      </Badge>
-                    )}
-                  </Box>
-                  {(!product.attributes ||
-                    !product.formattedPrice ||
-                    !product.description ||
-                    categoryAttributes[selectedCategory].some(
-                      (attr) => !product.attributes?.[attr]
-                    )) && (
-                    <Badge
-                      position="absolute"
-                      top={2}
-                      left={2}
-                      colorScheme="orange"
-                      display="flex"
-                      alignItems="center"
-                    >
-                      <InfoIcon mr={1} boxSize={3} />
-                      Incomplete Info
-                    </Badge>
-                  )}
-                  <Box mt={4} textAlign="center">
-                    <Button
-                      size="sm"
-                      w="full"
-                      colorScheme="gray"
-                      bg="gray.700"
-                      color="white"
-                      _hover={{ bg: "gray.900" }}
-                      isDisabled={comparedProducts.some((p) => p.id === product.id)}
-                      onClick={() => handleAddToComparison(product.id)}
-                    >
-                      {comparedProducts.some((p) => p.id === product.id) ? "Added" : "Compare"}
-                    </Button>
-                  </Box>
-                </Box>
-              </GridItem>
-            ))}
-          </Grid>
-        ) : (
-          <Box
-            textAlign="center"
-            py={8}
-            px={6}
-            borderWidth="1px"
-            borderRadius="lg"
-            borderStyle="dashed"
-            borderColor="gray.300"
-          >
-            <Text fontSize="lg" color="gray.500">
-              No products found matching "{searchQuery}"
-            </Text>
-            <Button mt={4} size="sm" onClick={clearSearch}>
-              Clear Search
-            </Button>
-          </Box>
-        )}
-      </Box>
-
-      {/* Comparison Table */}
-      {comparedProducts.length > 0 && (
-        <Box mt={10} overflowX="auto" borderRadius="xl" overflow="hidden">
-          <Heading as="h2" size="md" mb={4} color="gray.700">
-            Comparison Results
-          </Heading>
-          {hasIncompleteProducts && (
-            <Alert status="info" mb={4} borderRadius="md" bg="gray.50">
-              <AlertIcon color="black" />
-              Some products have incomplete information. Missing details are marked as "No info".
-            </Alert>
-          )}
-          <Table
-            variant="simple"
-            borderWidth="1px"
-            borderColor="gray.200"
-            borderRadius="xl"
-            overflow="hidden"
-          >
-            <Thead>
-              <Tr bg="gray.50">
-                <Th width="20%" borderTopLeftRadius="xl">
-                  Feature
-                </Th>
-                {comparedProducts.map((product, index) => (
-                  <Th
-                    key={product.id}
-                    width={`${80 / comparedProducts.length}%`}
-                    borderTopRightRadius={index === comparedProducts.length - 1 ? "xl" : "0"}
-                  >
-                    <Flex justify="space-between" align="center">
-                      <Text>{product.name}</Text>
-                      <CloseButton
-                        size="sm"
-                        onClick={() => handleRemoveFromComparison(product.id)}
-                      />
-                    </Flex>
-                  </Th>
-                ))}
-              </Tr>
-            </Thead>
-            <Tbody>
-              <Tr>
-                <Td fontWeight="bold">Image</Td>
-                {comparedProducts.map((product) => (
-                  <Td key={product.id}>
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      maxH="100px"
-                      objectFit="contain"
-                      mx="auto"
-                      fallbackSrc="https://via.placeholder.com/100"
-                      borderRadius="xl"
-                    />
-                  </Td>
-                ))}
-              </Tr>
-              <Tr>
-                <Td fontWeight="bold">Price</Td>
-                {comparedProducts.map((product) => (
-                  <Td key={product.id}>{displayProductInfo(product, "price")}</Td>
-                ))}
-              </Tr>
-              <Tr>
-                <Td fontWeight="bold">Availability</Td>
-                {comparedProducts.map((product) => (
-                  <Td key={product.id}>
-                    <Badge colorScheme={product.inStock ? "green" : "red"}>
-                      {product.inStock ? "In Stock" : "Out of Stock"}
-                    </Badge>
-                  </Td>
-                ))}
-              </Tr>
-              <Tr>
-                <Td fontWeight="bold">Description</Td>
-                {comparedProducts.map((product) => (
-                  <Td key={product.id}>{displayProductInfo(product, "description")}</Td>
-                ))}
-              </Tr>
-              {categoryAttributes[selectedCategory]?.map((attribute) => (
-                <Tr key={attribute}>
-                  <Td fontWeight="bold">{attribute}</Td>
-                  {comparedProducts.map((product) => (
-                    <Td key={product.id}>{displayAttributeInfo(product, attribute)}</Td>
-                  ))}
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
-      )}
-
-      {comparedProducts.length === 0 && (
+      {/* Error State */}
+      {error ? (
         <Box
-          textAlign="center"
-          py={12}
+          w="full"
+          mx="auto"
+          py={8}
           px={6}
           borderWidth="1px"
           borderRadius="lg"
           borderStyle="dashed"
           borderColor="gray.300"
+          textAlign="center"
+          bg="gray.50"
         >
-          <Text fontSize="lg" color="gray.500">
-            Select products from above to compare their features
+          <Text color="red.500" fontSize="lg">
+            Error: {error}
           </Text>
+          <Button
+            mt={4}
+            size="sm"
+            onClick={fetchProducts}
+            bg="gray.700"
+            color="white"
+            _hover={{ bg: "gray.900" }}
+          >
+            Retry
+          </Button>
         </Box>
+      ) : (
+        <>
+          {/* Products to Compare Section */}
+          <Box mb={8}>
+            <Heading as="h2" size="md" mb={4} color="gray.700">
+              Select Products to Compare
+            </Heading>
+
+            {loading ? (
+              <Grid
+                templateColumns={{
+                  base: "repeat(1, 1fr)",
+                  sm: "repeat(2, 1fr)",
+                  md: "repeat(3, 1fr)",
+                  lg: "repeat(4, 1fr)",
+                }}
+                gap={6}
+              >
+                {[...Array(8)].map((_, index) => (
+                  <GridItem key={index}>
+                    <Skeleton height="300px" width="100%" borderRadius="xl" />
+                  </GridItem>
+                ))}
+              </Grid>
+            ) : memoizedProducts.length > 0 ? (
+              <Grid
+                templateColumns={{
+                  base: "repeat(1, 1fr)",
+                  sm: "repeat(2, 1fr)",
+                  md: "repeat(3, 1fr)",
+                  lg: "repeat(4, 1fr)",
+                }}
+                gap={6}
+              >
+                {memoizedProducts.map((product, index) => (
+                  <GridItem key={product.id}>
+                    <Box position="relative">
+                      <ProductBox
+                        item={product}
+                        index={index}
+                        category={selectedCategory}
+                        controls={controls}
+                      />
+                      <Box position="absolute" top={2} right={2}>
+                        {!product.inStock && (
+                          <Badge colorScheme="red" mb={2}>
+                            Out of Stock
+                          </Badge>
+                        )}
+                      </Box>
+                      {(!product.attributes ||
+                        !product.formattedPrice ||
+                        !product.description ||
+                        categoryAttributes[selectedCategory].some(
+                          (attr) => !product.attributes?.[attr]
+                        )) && (
+                        <Badge
+                          position="absolute"
+                          top={2}
+                          left={2}
+                          colorScheme="orange"
+                          display="flex"
+                          alignItems="center"
+                        >
+                          <InfoIcon mr={1} boxSize={3} />
+                          Incomplete Info
+                        </Badge>
+                      )}
+                      <Box mt={4} textAlign="center">
+                        <Button
+                          size="sm"
+                          w="full"
+                          colorScheme="gray"
+                          bg="gray.700"
+                          color="white"
+                          _hover={{ bg: "gray.900" }}
+                          isDisabled={comparedProducts.some((p) => p.id === product.id)}
+                          onClick={() => handleAddToComparison(product.id)}
+                        >
+                          {comparedProducts.some((p) => p.id === product.id) ? "Added" : "Compare"}
+                        </Button>
+                      </Box>
+                    </Box>
+                  </GridItem>
+                ))}
+              </Grid>
+            ) : (
+              <Box
+                textAlign="center"
+                py={8}
+                px={6}
+                borderWidth="1px"
+                borderRadius="lg"
+                borderStyle="dashed"
+                borderColor="gray.300"
+                mx="auto"
+                maxW="auto"
+              >
+                <Text fontSize="lg" color="gray.500">
+                  {searchQuery
+                    ? `No products found matching "${searchQuery}"`
+                    : "No products available for this category"}
+                </Text>
+                {searchQuery && (
+                  <Button mt={4} size="sm" onClick={clearSearch}>
+                    Clear Search
+                  </Button>
+                )}
+              </Box>
+            )}
+          </Box>
+
+          {/* Comparison Table */}
+          {comparedProducts.length > 0 && (
+            <Box mt={10} overflowX="auto" borderRadius="xl" overflow="hidden">
+              <Heading as="h2" size="md" mb={4} color="gray.700">
+                Comparison Results
+              </Heading>
+              {hasIncompleteProducts && (
+                <Box mb={4} p={4} bg="gray.50" borderRadius="md">
+                  <Flex align="center">
+                    <InfoIcon color="orange.500" mr={2} />
+                    <Text color="gray.700">
+                      Some products have incomplete information. Missing details are marked as "No info".
+                    </Text>
+                  </Flex>
+                </Box>
+              )}
+              <Table
+                variant="simple"
+                borderWidth="1px"
+                borderColor="gray.200"
+                borderRadius="xl"
+                overflow="hidden"
+              >
+                <Thead>
+                  <Tr bg="gray.50">
+                    <Th width="20%" borderTopLeftRadius="xl">
+                      Feature
+                    </Th>
+                    {comparedProducts.map((product, index) => (
+                      <Th
+                        key={product.id}
+                        width={`${80 / comparedProducts.length}%`}
+                        borderTopRightRadius={index === comparedProducts.length - 1 ? "xl" : "0"}
+                      >
+                        <Flex justify="space-between" align="center">
+                          <Text>{product.name}</Text>
+                          <CloseButton
+                            size="sm"
+                            onClick={() => handleRemoveFromComparison(product.id)}
+                          />
+                        </Flex>
+                      </Th>
+                    ))}
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  <Tr>
+                    <Td fontWeight="bold">Image</Td>
+                    {comparedProducts.map((product) => (
+                      <Td key={product.id}>
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          maxH="100px"
+                          objectFit="contain"
+                          mx="auto"
+                          fallbackSrc="https://via.placeholder.com/100"
+                          borderRadius="xl"
+                        />
+                      </Td>
+                    ))}
+                  </Tr>
+                  <Tr>
+                    <Td fontWeight="bold">Price</Td>
+                    {comparedProducts.map((product) => (
+                      <Td key={product.id}>{displayProductInfo(product, "price")}</Td>
+                    ))}
+                  </Tr>
+                  <Tr>
+                    <Td fontWeight="bold">Availability</Td>
+                    {comparedProducts.map((product) => (
+                      <Td key={product.id}>
+                        <Badge colorScheme={product.inStock ? "green" : "red"}>
+                          {product.inStock ? "In Stock" : "Out of Stock"}
+                        </Badge>
+                      </Td>
+                    ))}
+                  </Tr>
+                  <Tr>
+                    <Td fontWeight="bold">Description</Td>
+                    {comparedProducts.map((product) => (
+                      <Td key={product.id}>{displayProductInfo(product, "description")}</Td>
+                    ))}
+                  </Tr>
+                  {categoryAttributes[selectedCategory]?.map((attribute) => (
+                    <Tr key={attribute}>
+                      <Td fontWeight="bold">{attribute}</Td>
+                      {comparedProducts.map((product) => (
+                        <Td key={product.id}>{displayAttributeInfo(product, attribute)}</Td>
+                      ))}
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          )}
+
+          {comparedProducts.length === 0 && !searchQuery && !loading && memoizedProducts.length > 0 && (
+            <Box
+              textAlign="center"
+              py={12}
+              px={6}
+              borderWidth="1px"
+              borderRadius="lg"
+              borderStyle="dashed"
+              borderColor="gray.300"
+              mx="auto"
+              maxW="auto"
+            >
+              <Text fontSize="lg" color="gray.500">
+                Select products from above to compare their features
+              </Text>
+            </Box>
+          )}
+        </>
       )}
     </Box>
   );

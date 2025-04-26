@@ -83,7 +83,7 @@ const ProductDetailPage = () => {
   }
 
   return (
-    <Box maxW="1200px" mx="auto" py={8} px={4}>
+    <Box maxW="1300px" mx="auto" py={8} px={4} >
       <Button as={Link} to={`/${category}`} mb={4} colorScheme="gray">
         Back to {category.charAt(0).toUpperCase() + category.slice(1)}
       </Button>

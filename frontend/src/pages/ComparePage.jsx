@@ -25,6 +25,7 @@ import {
   InputRightElement,
   Center,
   Skeleton,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import { SearchIcon, CloseIcon, InfoIcon } from "@chakra-ui/icons";
 import { useState, useEffect, useMemo } from "react";
@@ -32,6 +33,10 @@ import { useNavigate } from "react-router-dom";
 import { useAnimation } from "framer-motion";
 import { useDebounce } from "use-debounce";
 import { AnimatedProductRow, ProductBox } from "../components/ProductComponents";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Add the MotionBox component from KeyboardPage
+const MotionBox = motion(Box);
 
 // Product categories and their specific comparable attributes
 const categoryAttributes = {
@@ -47,6 +52,7 @@ const ComparePage = () => {
   const [availableProducts, setAvailableProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingDelay, setLoadingDelay] = useState(false);
   const [error, setError] = useState(null);
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const toast = useToast();
@@ -55,8 +61,8 @@ const ComparePage = () => {
 
   const fetchProducts = async () => {
     setLoading(true);
+    setLoadingDelay(true);
     setError(null);
-    setComparedProducts([]);
     try {
       const fetchCategory = selectedCategory === "accessories" ? "others" : selectedCategory;
       const queryParamsObj = {};
@@ -80,7 +86,7 @@ const ComparePage = () => {
       const data = await response.json();
       console.log(`Fetched ${selectedCategory}:`, data);
 
-      // Validate data
+      // Validate data - similar to KeyboardPage validation
       const validData = data.filter(
         (product) =>
           product &&
@@ -88,9 +94,14 @@ const ComparePage = () => {
           typeof product.name === "string" &&
           product.name.trim() &&
           typeof product.price === "number" &&
+          product.price >= 0 &&
           typeof product.image === "string" &&
-          typeof product.availability === "string"
+          product.image.trim() &&
+          product.image !== "null" &&
+          typeof product.availability === "string" &&
+          ["in-stock", "out-of-stock"].includes(product.availability)
       );
+      
       if (validData.length < data.length) {
         console.warn(
           `Invalid ${selectedCategory} entries filtered out:`,
@@ -117,13 +128,18 @@ const ComparePage = () => {
       console.error(`Error fetching ${selectedCategory}:`, error);
       setError(error.message);
     } finally {
-      setLoading(false);
+      // Set a timeout to simulate loading like in KeyboardPage
+      setTimeout(() => {
+        setLoading(false);
+        setLoadingDelay(false);
+      }, 500);
     }
   };
 
   useEffect(() => {
+    setComparedProducts([]);
     fetchProducts();
-  }, [selectedCategory, debouncedSearchQuery, controls]);
+  }, [selectedCategory, debouncedSearchQuery]);
 
   // Search functionality
   const handleSearch = (e) => {
@@ -225,7 +241,7 @@ const ComparePage = () => {
     );
   });
 
-  // Memoize products to stabilize rendering
+  // Memoize products to stabilize rendering - like in KeyboardPage
   const memoizedProducts = useMemo(() => {
     console.log(`Rendering ${selectedCategory}:`, availableProducts);
     return availableProducts;
@@ -321,261 +337,330 @@ const ComparePage = () => {
         </Box>
       )}
 
-      {/* Error State */}
-      {error ? (
+      {/* Products to Compare Section with AnimatePresence for smooth transitions */}
+      <AnimatePresence mode="wait">
+        {error ? (
+          <MotionBox
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            w="full"
+            mx="auto"
+            py={8}
+            px={6}
+            borderWidth="1px"
+            borderRadius="lg"
+            borderStyle="dashed"
+            borderColor="gray.300"
+            textAlign="center"
+            bg="gray.50"
+          >
+            <Text color="red.500" fontSize="lg">
+              Error: {error}
+            </Text>
+            <Button
+              mt={4}
+              size="sm"
+              onClick={fetchProducts}
+              bg="gray.700"
+              color="white"
+              _hover={{ bg: "gray.900" }}
+            >
+              Retry
+            </Button>
+          </MotionBox>
+        ) : loading || loadingDelay ? (
+          <MotionBox
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, repeatType: "loop" }}
+          >
+            <Heading as="h2" size="md" mb={4} color="gray.700">
+              Select Products to Compare
+            </Heading>
+            <VStack align="start" spacing={6} width="100%">
+              <Center width="100%">
+                <SimpleGrid
+                  columns={{
+                    base: 1,
+                    sm: 2,
+                    md: 3,
+                    lg: 4,
+                  }}
+                  spacing={8}
+                  width="100%"
+                >
+                  {[...Array(8)].map((_, index) => (
+                    <Box
+                      key={index}
+                      minWidth="200px"
+                      minHeight="300px"
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="center"
+                    >
+                      <Box
+                        width="100%"
+                        position="relative"
+                        minWidth="200px"
+                        minHeight="200px"
+                      >
+                        <Skeleton
+                          width="100%"
+                          height="0"
+                          paddingBottom="100%"
+                          borderRadius="xl"
+                          startColor="gray.200"
+                          endColor="gray.300"
+                        />
+                      </Box>
+                      <Box mt={3} textAlign="center" width="100%">
+                        <Skeleton
+                          height="16px"
+                          width="80%"
+                          mb={2}
+                          startColor="gray.200"
+                          endColor="gray.300"
+                        />
+                        <Skeleton
+                          height="12px"
+                          width="60%"
+                          startColor="gray.200"
+                          endColor="gray.300"
+                        />
+                      </Box>
+                      <Skeleton 
+                        height="30px" 
+                        width="100%" 
+                        mt={2}
+                        startColor="gray.200"
+                        endColor="gray.300" 
+                      />
+                    </Box>
+                  ))}
+                </SimpleGrid>
+              </Center>
+            </VStack>
+          </MotionBox>
+        ) : memoizedProducts.length > 0 ? (
+          <MotionBox
+            key="products"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <Heading as="h2" size="md" mb={4} color="gray.700">
+              Select Products to Compare
+            </Heading>
+            
+            <Grid
+              templateColumns={{
+                base: "repeat(1, 1fr)",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(3, 1fr)",
+                lg: "repeat(4, 1fr)",
+              }}
+              gap={6}
+            >
+              {memoizedProducts.map((product, index) => (
+                <GridItem key={product.id}>
+                  <Box position="relative">
+                    <ProductBox
+                      item={product}
+                      index={index}
+                      category={selectedCategory}
+                      controls={controls}
+                    />
+                    <Box position="absolute" top={2} right={2}>
+                      {!product.inStock && (
+                        <Badge colorScheme="red" mb={2}>
+                          Out of Stock
+                        </Badge>
+                      )}
+                    </Box>
+                    {(!product.attributes ||
+                      !product.formattedPrice ||
+                      !product.description ||
+                      categoryAttributes[selectedCategory].some(
+                        (attr) => !product.attributes?.[attr]
+                      )) && (
+                      <Badge
+                        position="absolute"
+                        top={2}
+                        left={2}
+                        colorScheme="orange"
+                        display="flex"
+                        alignItems="center"
+                      >
+                        <InfoIcon mr={1} boxSize={3} />
+                        Incomplete Info
+                      </Badge>
+                    )}
+                    <Box mt={4} textAlign="center">
+                      <Button
+                        size="sm"
+                        w="full"
+                        colorScheme="gray"
+                        bg="gray.700"
+                        color="white"
+                        _hover={{ bg: "gray.900" }}
+                        isDisabled={comparedProducts.some((p) => p.id === product.id)}
+                        onClick={() => handleAddToComparison(product.id)}
+                      >
+                        {comparedProducts.some((p) => p.id === product.id) ? "Added" : "Compare"}
+                      </Button>
+                    </Box>
+                  </Box>
+                </GridItem>
+              ))}
+            </Grid>
+          </MotionBox>
+        ) : (
+          <MotionBox
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            textAlign="center"
+            py={8}
+            px={6}
+            borderWidth="1px"
+            borderRadius="lg"
+            borderStyle="dashed"
+            borderColor="gray.300"
+            mx="auto"
+            maxW="auto"
+          >
+            <Text fontSize="lg" color="gray.500">
+              {searchQuery
+                ? `No products found matching "${searchQuery}"`
+                : "No products available for this category"}
+            </Text>
+            {searchQuery && (
+              <Button mt={4} size="sm" onClick={clearSearch}>
+                Clear Search
+              </Button>
+            )}
+          </MotionBox>
+        )}
+      </AnimatePresence>
+
+      {/* Comparison Table */}
+      {comparedProducts.length > 0 && (
+        <Box mt={10} overflowX="auto" borderRadius="xl" overflow="hidden">
+          <Heading as="h2" size="md" mb={4} color="gray.700">
+            Comparison Results
+          </Heading>
+          {hasIncompleteProducts && (
+            <Box mb={4} p={4} bg="gray.50" borderRadius="md">
+              <Flex align="center">
+                <InfoIcon color="orange.500" mr={2} />
+                <Text color="gray.700">
+                  Some products have incomplete information. Missing details are marked as "No info".
+                </Text>
+              </Flex>
+            </Box>
+          )}
+          <Table
+            variant="simple"
+            borderWidth="1px"
+            borderColor="gray.200"
+            borderRadius="xl"
+            overflow="hidden"
+          >
+            <Thead>
+              <Tr bg="gray.50">
+                <Th width="20%" borderTopLeftRadius="xl">
+                  Feature
+                </Th>
+                {comparedProducts.map((product, index) => (
+                  <Th
+                    key={product.id}
+                    width={`${80 / comparedProducts.length}%`}
+                    borderTopRightRadius={index === comparedProducts.length - 1 ? "xl" : "0"}
+                  >
+                    <Flex justify="space-between" align="center">
+                      <Text>{product.name}</Text>
+                      <CloseButton
+                        size="sm"
+                        onClick={() => handleRemoveFromComparison(product.id)}
+                      />
+                    </Flex>
+                  </Th>
+                ))}
+              </Tr>
+            </Thead>
+            <Tbody>
+              <Tr>
+                <Td fontWeight="bold">Image</Td>
+                {comparedProducts.map((product) => (
+                  <Td key={product.id}>
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      maxH="100px"
+                      objectFit="contain"
+                      mx="auto"
+                      fallbackSrc="https://via.placeholder.com/100"
+                      borderRadius="xl"
+                    />
+                  </Td>
+                ))}
+              </Tr>
+              <Tr>
+                <Td fontWeight="bold">Price</Td>
+                {comparedProducts.map((product) => (
+                  <Td key={product.id}>{displayProductInfo(product, "price")}</Td>
+                ))}
+              </Tr>
+              <Tr>
+                <Td fontWeight="bold">Availability</Td>
+                {comparedProducts.map((product) => (
+                  <Td key={product.id}>
+                    <Badge colorScheme={product.inStock ? "green" : "red"}>
+                      {product.inStock ? "In Stock" : "Out of Stock"}
+                    </Badge>
+                  </Td>
+                ))}
+              </Tr>
+              <Tr>
+                <Td fontWeight="bold">Description</Td>
+                {comparedProducts.map((product) => (
+                  <Td key={product.id}>{displayProductInfo(product, "description")}</Td>
+                ))}
+              </Tr>
+              {categoryAttributes[selectedCategory]?.map((attribute) => (
+                <Tr key={attribute}>
+                  <Td fontWeight="bold">{attribute}</Td>
+                  {comparedProducts.map((product) => (
+                    <Td key={product.id}>{displayAttributeInfo(product, attribute)}</Td>
+                  ))}
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Box>
+      )}
+
+      {comparedProducts.length === 0 && !searchQuery && !loading && !loadingDelay && memoizedProducts.length > 0 && (
         <Box
-          w="full"
-          mx="auto"
-          py={8}
+          textAlign="center"
+          py={12}
           px={6}
           borderWidth="1px"
           borderRadius="lg"
           borderStyle="dashed"
           borderColor="gray.300"
-          textAlign="center"
-          bg="gray.50"
+          mx="auto"
+          maxW="auto"
         >
-          <Text color="red.500" fontSize="lg">
-            Error: {error}
+          <Text fontSize="lg" color="gray.500">
+            Select products from above to compare their features
           </Text>
-          <Button
-            mt={4}
-            size="sm"
-            onClick={fetchProducts}
-            bg="gray.700"
-            color="white"
-            _hover={{ bg: "gray.900" }}
-          >
-            Retry
-          </Button>
         </Box>
-      ) : (
-        <>
-          {/* Products to Compare Section */}
-          <Box mb={8}>
-            <Heading as="h2" size="md" mb={4} color="gray.700">
-              Select Products to Compare
-            </Heading>
-
-            {loading ? (
-              <Grid
-                templateColumns={{
-                  base: "repeat(1, 1fr)",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                  lg: "repeat(4, 1fr)",
-                }}
-                gap={6}
-              >
-                {[...Array(8)].map((_, index) => (
-                  <GridItem key={index}>
-                    <Skeleton height="300px" width="100%" borderRadius="xl" />
-                  </GridItem>
-                ))}
-              </Grid>
-            ) : memoizedProducts.length > 0 ? (
-              <Grid
-                templateColumns={{
-                  base: "repeat(1, 1fr)",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                  lg: "repeat(4, 1fr)",
-                }}
-                gap={6}
-              >
-                {memoizedProducts.map((product, index) => (
-                  <GridItem key={product.id}>
-                    <Box position="relative">
-                      <ProductBox
-                        item={product}
-                        index={index}
-                        category={selectedCategory}
-                        controls={controls}
-                      />
-                      <Box position="absolute" top={2} right={2}>
-                        {!product.inStock && (
-                          <Badge colorScheme="red" mb={2}>
-                            Out of Stock
-                          </Badge>
-                        )}
-                      </Box>
-                      {(!product.attributes ||
-                        !product.formattedPrice ||
-                        !product.description ||
-                        categoryAttributes[selectedCategory].some(
-                          (attr) => !product.attributes?.[attr]
-                        )) && (
-                        <Badge
-                          position="absolute"
-                          top={2}
-                          left={2}
-                          colorScheme="orange"
-                          display="flex"
-                          alignItems="center"
-                        >
-                          <InfoIcon mr={1} boxSize={3} />
-                          Incomplete Info
-                        </Badge>
-                      )}
-                      <Box mt={4} textAlign="center">
-                        <Button
-                          size="sm"
-                          w="full"
-                          colorScheme="gray"
-                          bg="gray.700"
-                          color="white"
-                          _hover={{ bg: "gray.900" }}
-                          isDisabled={comparedProducts.some((p) => p.id === product.id)}
-                          onClick={() => handleAddToComparison(product.id)}
-                        >
-                          {comparedProducts.some((p) => p.id === product.id) ? "Added" : "Compare"}
-                        </Button>
-                      </Box>
-                    </Box>
-                  </GridItem>
-                ))}
-              </Grid>
-            ) : (
-              <Box
-                textAlign="center"
-                py={8}
-                px={6}
-                borderWidth="1px"
-                borderRadius="lg"
-                borderStyle="dashed"
-                borderColor="gray.300"
-                mx="auto"
-                maxW="auto"
-              >
-                <Text fontSize="lg" color="gray.500">
-                  {searchQuery
-                    ? `No products found matching "${searchQuery}"`
-                    : "No products available for this category"}
-                </Text>
-                {searchQuery && (
-                  <Button mt={4} size="sm" onClick={clearSearch}>
-                    Clear Search
-                  </Button>
-                )}
-              </Box>
-            )}
-          </Box>
-
-          {/* Comparison Table */}
-          {comparedProducts.length > 0 && (
-            <Box mt={10} overflowX="auto" borderRadius="xl" overflow="hidden">
-              <Heading as="h2" size="md" mb={4} color="gray.700">
-                Comparison Results
-              </Heading>
-              {hasIncompleteProducts && (
-                <Box mb={4} p={4} bg="gray.50" borderRadius="md">
-                  <Flex align="center">
-                    <InfoIcon color="orange.500" mr={2} />
-                    <Text color="gray.700">
-                      Some products have incomplete information. Missing details are marked as "No info".
-                    </Text>
-                  </Flex>
-                </Box>
-              )}
-              <Table
-                variant="simple"
-                borderWidth="1px"
-                borderColor="gray.200"
-                borderRadius="xl"
-                overflow="hidden"
-              >
-                <Thead>
-                  <Tr bg="gray.50">
-                    <Th width="20%" borderTopLeftRadius="xl">
-                      Feature
-                    </Th>
-                    {comparedProducts.map((product, index) => (
-                      <Th
-                        key={product.id}
-                        width={`${80 / comparedProducts.length}%`}
-                        borderTopRightRadius={index === comparedProducts.length - 1 ? "xl" : "0"}
-                      >
-                        <Flex justify="space-between" align="center">
-                          <Text>{product.name}</Text>
-                          <CloseButton
-                            size="sm"
-                            onClick={() => handleRemoveFromComparison(product.id)}
-                          />
-                        </Flex>
-                      </Th>
-                    ))}
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  <Tr>
-                    <Td fontWeight="bold">Image</Td>
-                    {comparedProducts.map((product) => (
-                      <Td key={product.id}>
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          maxH="100px"
-                          objectFit="contain"
-                          mx="auto"
-                          fallbackSrc="https://via.placeholder.com/100"
-                          borderRadius="xl"
-                        />
-                      </Td>
-                    ))}
-                  </Tr>
-                  <Tr>
-                    <Td fontWeight="bold">Price</Td>
-                    {comparedProducts.map((product) => (
-                      <Td key={product.id}>{displayProductInfo(product, "price")}</Td>
-                    ))}
-                  </Tr>
-                  <Tr>
-                    <Td fontWeight="bold">Availability</Td>
-                    {comparedProducts.map((product) => (
-                      <Td key={product.id}>
-                        <Badge colorScheme={product.inStock ? "green" : "red"}>
-                          {product.inStock ? "In Stock" : "Out of Stock"}
-                        </Badge>
-                      </Td>
-                    ))}
-                  </Tr>
-                  <Tr>
-                    <Td fontWeight="bold">Description</Td>
-                    {comparedProducts.map((product) => (
-                      <Td key={product.id}>{displayProductInfo(product, "description")}</Td>
-                    ))}
-                  </Tr>
-                  {categoryAttributes[selectedCategory]?.map((attribute) => (
-                    <Tr key={attribute}>
-                      <Td fontWeight="bold">{attribute}</Td>
-                      {comparedProducts.map((product) => (
-                        <Td key={product.id}>{displayAttributeInfo(product, attribute)}</Td>
-                      ))}
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
-          )}
-
-          {comparedProducts.length === 0 && !searchQuery && !loading && memoizedProducts.length > 0 && (
-            <Box
-              textAlign="center"
-              py={12}
-              px={6}
-              borderWidth="1px"
-              borderRadius="lg"
-              borderStyle="dashed"
-              borderColor="gray.300"
-              mx="auto"
-              maxW="auto"
-            >
-              <Text fontSize="lg" color="gray.500">
-                Select products from above to compare their features
-              </Text>
-            </Box>
-          )}
-        </>
       )}
     </Box>
   );

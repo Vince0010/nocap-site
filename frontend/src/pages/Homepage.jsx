@@ -231,7 +231,7 @@ const HomePage = () => {
             <AnimatedProductRow
               title="New Arrivals"
               items={data.newArrivals}
-              category={[data.newArrivals[0].category, data.newArrivals[1].category]}
+              category={[data.newArrivals[0].category|| data.newArrivals[1].category]}
             />
             <AnimatedProductRow
               title="Best Sellers"

@@ -41,16 +41,16 @@ export const ProductBox = ({ item, index, category }) => {
     };
   }, [controls]);
 
+  // Validation: Make altImage optional
   if (
     !item ||
     !item.name ||
     !item.image ||
-    !item.altImage ||
     !item.id ||
     !category
   ) {
     console.warn("Invalid item data or category:", item, category);
-    return <Text>Invalid item data</Text>;
+    return null; // Skip rendering invalid items
   }
 
   return (
@@ -88,7 +88,7 @@ export const ProductBox = ({ item, index, category }) => {
             width="100%"
             position="relative"
           >
-            <Skeleton isLoaded={!!item.image && !!item.altImage}>
+            <Skeleton isLoaded={!!item.image}>
               <Box
                 width="100%"
                 height="0"
@@ -118,29 +118,31 @@ export const ProductBox = ({ item, index, category }) => {
                       left: "0",
                     }}
                     animate={{
-                      opacity: isHovered ? 0 : 1,
+                      opacity: item.altImage && isHovered ? 0 : 1,
                       scale: isHovered ? 1.04 : 1,
                     }}
                     transition={{ duration: 0.3 }}
                   />
-                  <MotionImg
-                    src={item.altImage}
-                    alt={`${item.name} alternate`}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      borderRadius: "0.75rem",
-                      position: "absolute",
-                      top: "0",
-                      left: "0",
-                    }}
-                    animate={{
-                      opacity: isHovered ? 1 : 0,
-                      scale: isHovered ? 1.04 : 1,
-                    }}
-                    transition={{ duration: 0.3 }}
-                  />
+                  {item.altImage && (
+                    <MotionImg
+                      src={item.altImage}
+                      alt={`${item.name} alternate`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: "0.75rem",
+                        position: "absolute",
+                        top: "0",
+                        left: "0",
+                      }}
+                      animate={{
+                        opacity: isHovered ? 1 : 0,
+                        scale: isHovered ? 1.04 : 1,
+                      }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  )}
                 </Box>
               </Box>
             </Skeleton>
@@ -192,17 +194,33 @@ export const AnimatedProductRow = ({ title, items, category }) => {
     };
   }, [controls]);
 
+  // Filter out invalid items before rendering
+  const validItems = items.filter(
+    (item) =>
+      item &&
+      item.id &&
+      item.name &&
+      item.image &&
+      category
+  );
+
+  if (validItems.length === 0) {
+    console.warn("No valid items to render in AnimatedProductRow:", items);
+  }
+
   return (
     <VStack align="start" spacing={6} mb={12} ref={ref} width="100%">
-      <Text
-        fontSize="3xl"
-        fontWeight="bold"
-        color="black"
-        width="100%"
-        textAlign="center"
-      >
-        {title}
-      </Text>
+      {title && (
+        <Text
+          fontSize="3xl"
+          fontWeight="bold"
+          color="black"
+          width="100%"
+          textAlign="center"
+        >
+          {title}
+        </Text>
+      )}
       <Center width="100%">
         <SimpleGrid
           columns={{ base: 1, sm: 2, md: 3, lg: 5 }}
@@ -211,7 +229,7 @@ export const AnimatedProductRow = ({ title, items, category }) => {
           justifyContent="center"
           maxW="auto"
         >
-          {items.map((item, index) => (
+          {validItems.map((item, index) => (
             <ProductBox
               key={item.id || index}
               item={item}

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import {
   Box,
   Flex,
@@ -41,37 +40,69 @@ const KeyboardPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = `/api/keyboards?_t=${Date.now()}`;
+      const url = "http://localhost:5000/api/keyboards"; // Match AdminInventory endpoint
+      console.log("Fetching from URL:", url);
       const response = await fetch(url);
+  
+    
       if (!response.ok) {
         const text = await response.text();
+        console.error("Response Text:", text);
         throw new Error(
           `Failed to fetch keyboards: ${response.status} ${text.slice(0, 100)}`
         );
       }
+  
       const data = await response.json();
-      console.log("Raw API Data:", data);
-
-      const validData = data.filter(
+      console.log("Raw API Data:", JSON.stringify(data, null, 2));
+  
+      // Handle single object or array
+      let keyboardArray;
+      if (Array.isArray(data)) {
+        keyboardArray = data.filter(
+          (product) => product.category?.toLowerCase() === "keyboard"
+        );
+      } else if (data && typeof data === "object") {
+        console.log("Received single object, wrapping in array");
+        keyboardArray = data.category?.toLowerCase() === "keyboard" ? [data] : [];
+      } else {
+        console.error("Unexpected data format:", data);
+        keyboardArray = [];
+      }
+      console.log("Filtered Keyboards:", keyboardArray);
+  
+      // Validate data
+      const validData = keyboardArray.filter(
         (keyboard) =>
           keyboard &&
-          typeof keyboard.id === "number" &&
+          (keyboard._id || keyboard.id) &&
           typeof keyboard.name === "string" &&
           keyboard.name.trim() &&
           typeof keyboard.price === "number" &&
           keyboard.price >= 0 &&
-          typeof keyboard.image === "string" &&
-          keyboard.image.trim() &&
-          keyboard.image !== "null" &&
-          typeof keyboard.availability === "string" &&
-          ["in-stock", "out-of-stock"].includes(keyboard.availability) &&
           typeof keyboard.brand === "string" &&
-          keyboard.brand.trim()
+          keyboard.brand.trim() &&
+          (!keyboard.image ||
+            (typeof keyboard.image === "string" &&
+              keyboard.image.trim() &&
+              keyboard.image !== "null"))
       );
-
       console.log("Valid Data:", validData);
-      setKeyboards(validData);
-      setFilteredKeyboards(validData);
+  
+      // Process data
+      const processedData = validData.map((keyboard) => ({
+        ...keyboard,
+        id: keyboard._id || keyboard.id,
+        availability: keyboard.quantity > 0 ? "in-stock" : "out-of-stock",
+      }));
+      console.log("Processed Data:", processedData);
+  
+      if (processedData.length === 0) {
+        console.warn("No valid keyboards after processing");
+      }
+  
+      setKeyboards(processedData);
+      setFilteredKeyboards(processedData);
     } catch (error) {
       console.error("Error fetching keyboards:", error);
       setError(error.message);
@@ -86,7 +117,9 @@ const KeyboardPage = () => {
 
   useEffect(() => {
     fetchKeyboards();
+    console.log("Keyboards fetched on mount:", keyboards);
   }, []);
+
 
   useEffect(() => {
     // Trigger loading state for filter/search changes
@@ -98,15 +131,14 @@ const KeyboardPage = () => {
     filtered = filtered.filter(
       (keyboard) =>
         keyboard &&
-        keyboard.id &&
+        (keyboard._id || keyboard.id) &&
         keyboard.name &&
-        keyboard.image &&
-        keyboard.image.trim() &&
-        keyboard.image !== "null" &&
-        keyboard.price !== undefined
+        keyboard.price !== undefined &&
+        // Avoid requiring image to be present
+        (!keyboard.image || (keyboard.image && keyboard.image.trim() && keyboard.image !== "null"))
     );
 
-    console.log("Initial Keyboards for Filtering:", filtered);
+    console.log("Initial Keyboards for Filtering4:", filtered);
 
     if (minPrice && !isNaN(minPrice) && minPrice !== "") {
       const min = parseFloat(minPrice);
@@ -120,7 +152,16 @@ const KeyboardPage = () => {
     }
     if (availability && availability !== "") {
       filtered = filtered.filter(
-        (keyboard) => keyboard.availability === availability
+        (keyboard) => {
+          // Check for both the added availability field and the quantity field
+          if (keyboard.availability) {
+            return keyboard.availability === availability;
+          } else {
+            // Fallback to determining availability from quantity
+            return (availability === "in-stock" && keyboard.quantity > 0) || 
+                   (availability === "out-of-stock" && keyboard.quantity <= 0);
+          }
+        }
       );
       console.log("After availability filter:", filtered);
     }
@@ -303,11 +344,12 @@ const KeyboardPage = () => {
             maxW="150px"
             borderRadius="md"
           >
-            <option value="">All</option>
-            <option value="Akko">Akko</option>
-            <option value="Gateron">Gateron</option>
-            <option value="KBDFans">KBDFans</option>
-            <option value="Unknown">Unknown</option>
+<option value="">All</option>
+  <option value="Akko">Akko</option>
+  <option value="Gateron">Gateron</option>
+  <option value="KBDFans">KBDFans</option>
+  <option value="Unknown">Unknown</option>
+  <option value="Aula">Aula</option>
           </Select>
         </Flex>
       </Flex>
@@ -422,7 +464,7 @@ const KeyboardPage = () => {
             mx="auto"
           >
             <Text fontSize="lg" color="gray.500">
-              No keyboards found with the selected filters.
+              No keyboards found.
             </Text>
             <Button mt={4} colorScheme="gray" onClick={clearAllFilters}>
               Clear All Filters

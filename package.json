@@ -12,6 +12,7 @@
     "dependencies": {
         "@fontsource/inter": "^5.2.5",
         "framer-motion": "^12.9.2",
+        "mongoose": "^8.14.1",
         "use-debounce": "^10.0.4"
     }
 }

@@ -156,6 +156,6 @@ const keyboardSchema = new mongoose.Schema(
   }
 );
 
-const Keyboard = mongoose.model("Keyboard", keyboardSchema);
+const Keyboard = mongoose.model("Keyboards", keyboardSchema);
 
 export default Keyboard;

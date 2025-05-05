@@ -27,6 +27,7 @@ const MotionBox = motion(Box);
 const KeyCapsPage = () => {
   const [keycaps, setKeycaps] = useState([]);
   const [filteredKeycaps, setFilteredKeycaps] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [availability, setAvailability] = useState("");
@@ -41,39 +42,90 @@ const KeyCapsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = `/api/keycaps?_t=${Date.now()}`;
-      console.log("Fetching keycaps with URL:", url);
+      const url = "http://localhost:5000/api/keycaps";
+      console.log("Fetching from URL:", url);
       const response = await fetch(url);
-      console.log("Response headers:", [...response.headers.entries()]);
+
       if (!response.ok) {
         const text = await response.text();
-        console.log("Response status:", response.status);
-        console.log("Response error text:", text.slice(0, 100));
-        throw new Error(`Failed to fetch keycaps: ${response.status} ${text.slice(0, 100)}`);
+        console.error("Response Text:", text);
+        throw new Error(
+          `Failed to fetch keycaps: ${response.status} ${text.slice(0, 100)}`
+        );
       }
-      const data = await response.json();
-      console.log("Raw API Data:", data);
 
-      const validData = data.filter(
+      const data = await response.json();
+      console.log("Raw API Data:", JSON.stringify(data, null, 2));
+
+      // Handle single object or array
+      let keycapsArray;
+      if (Array.isArray(data)) {
+        keycapsArray = data.filter(
+          (product) => product.category?.toLowerCase() === "keycaps"
+        );
+      } else if (data && typeof data === "object") {
+        console.log("Received single object, wrapping in array");
+        keycapsArray = data.category?.toLowerCase() === "keycaps" ? [data] : [];
+      } else {
+        console.error("Unexpected data format:", data);
+        keycapsArray = [];
+      }
+      console.log("Filtered Keycaps:", keycapsArray);
+
+      // Validate data
+      const validData = keycapsArray.filter(
         (keycap) =>
           keycap &&
-          typeof keycap.id === "number" &&
+          (keycap._id || keycap.id) &&
           typeof keycap.name === "string" &&
           keycap.name.trim() &&
           typeof keycap.price === "number" &&
           keycap.price >= 0 &&
-          typeof keycap.image === "string" &&
-          keycap.image.trim() &&
-          keycap.image !== "null" &&
-          typeof keycap.availability === "string" &&
-          ["in-stock", "out-of-stock"].includes(keycap.availability) &&
           typeof keycap.brand === "string" &&
-          keycap.brand.trim()
+          keycap.brand.trim() &&
+          (!keycap.image ||
+            (typeof keycap.image === "string" &&
+              keycap.image.trim() &&
+              keycap.image !== "null"))
+              &&(!keycap.altimage ||
+                (typeof keycap.altimage === "string" &&
+                  keycap.altimage.trim() &&
+                  keycap.altimage !== "null"))
+      
       );
-
       console.log("Valid Data:", validData);
-      setKeycaps(validData);
-      setFilteredKeycaps(validData);
+
+      // Process data
+      const processedData = validData.map((keycap) => {
+        if (!keycap.brand || !keycap.brand.trim()) {
+          console.log(`Assigned Unknown brand to keyboard: ${keycap.name || keycap._id}`);
+        }
+        return {
+          ...keycap,
+          id: keycap._id || keycap.id,
+          category: keycap.category?.toLowerCase() || "keyboards", // Normalize category
+          brand:
+            typeof keycap.brand === "string" && keycap.brand.trim()
+              ? keycap.brand
+              : "Unknown",
+              image: keycap.image || "https://via.placeholder.com/100",
+              altImage: keycap.altImage || "https://placehold.co/600x400/000000/FFF",// Normalize category
+          availability: keycap.quantity > 0 ? "in-stock" : "out-of-stock",
+        };
+      });
+      console.log("Processed Data:", processedData);
+
+      if (processedData.length === 0) {
+        console.warn("No valid keycaps after processing");
+      }
+      const uniqueBrands = [
+        ...new Set(processedData.map((keycaps) => keycaps.brand)),
+      ].sort();
+      console.log("Unique Brands:", uniqueBrands);
+
+      setKeycaps(processedData);
+      setFilteredKeycaps(processedData);
+      setBrandOptions(uniqueBrands);
     } catch (error) {
       console.error("Error fetching keycaps:", error);
       setError(error.message);
@@ -88,6 +140,7 @@ const KeyCapsPage = () => {
 
   useEffect(() => {
     fetchKeycaps();
+    console.log("Keycaps fetched on mount:", keycaps);
   }, []);
 
   useEffect(() => {
@@ -100,12 +153,14 @@ const KeyCapsPage = () => {
     filtered = filtered.filter(
       (keycap) =>
         keycap &&
-        keycap.id &&
+        (keycap._id || keycap.id) &&
         keycap.name &&
-        keycap.image &&
-        keycap.image.trim() &&
-        keycap.image !== "null" &&
-        keycap.price !== undefined
+        keycap.price !== undefined &&
+        // Avoid requiring image to be present
+        (!keycap.image ||
+          (keycap.image && keycap.image.trim() && keycap.image !== "null"))
+          && (!keycap.altimage ||
+            (keycap.altimage && keycap.altimage.trim() && keycap.altimage !== "null"))
     );
 
     console.log("Initial Keycaps for Filtering:", filtered);
@@ -121,7 +176,18 @@ const KeyCapsPage = () => {
       console.log("After maxPrice filter:", filtered);
     }
     if (availability && availability !== "") {
-      filtered = filtered.filter((keycap) => keycap.availability === availability);
+      filtered = filtered.filter((keycap) => {
+        // Check for both the added availability field and the quantity field
+        if (keycap.availability) {
+          return keycap.availability === availability;
+        } else {
+          // Fallback to determining availability from quantity
+          return (
+            (availability === "in-stock" && keycap.quantity > 0) ||
+            (availability === "out-of-stock" && keycap.quantity <= 0)
+          );
+        }
+      });
       console.log("After availability filter:", filtered);
     }
     if (brand && brand !== "") {
@@ -169,8 +235,22 @@ const KeyCapsPage = () => {
   }, [filteredKeycaps]);
 
   return (
-    <Box h="calc(104vh - 120px)" overflowY="auto" bg="gray.30" px={4} py={8} maxW="auto" mx="auto">
-      <Heading as="h1" mb={6} color="gray.800" textAlign="center" fontWeight="bold">
+    <Box
+      h="calc(104vh - 120px)"
+      overflowY="auto"
+      bg="gray.30"
+      px={4}
+      py={8}
+      maxW="auto"
+      mx="auto"
+    >
+      <Heading
+        as="h1"
+        mb={6}
+        color="gray.800"
+        textAlign="center"
+        fontWeight="bold"
+      >
         Keycaps
       </Heading>
 
@@ -200,7 +280,9 @@ const KeyCapsPage = () => {
           onClick={clearAllFilters}
           colorScheme="gray"
           ml={{ base: 0, md: "auto" }}
-          isDisabled={!searchQuery && !minPrice && !maxPrice && !availability && !brand}
+          isDisabled={
+            !searchQuery && !minPrice && !maxPrice && !availability && !brand
+          }
         >
           Clear All
         </Button>
@@ -216,7 +298,9 @@ const KeyCapsPage = () => {
         borderRadius="md"
       >
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Price Range:</Text>
+          <Text fontWeight="bold" fontSize="sm">
+            Price Range:
+          </Text>
           <Flex>
             <Input
               placeholder="MIN"
@@ -247,7 +331,9 @@ const KeyCapsPage = () => {
         </Flex>
 
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Availability:</Text>
+          <Text fontWeight="bold" fontSize="sm">
+            Availability:
+          </Text>
           <Select
             bg="white"
             color="black"
@@ -255,6 +341,7 @@ const KeyCapsPage = () => {
             onChange={(e) => setAvailability(e.target.value)}
             size="sm"
             maxW="150px"
+            Chiche
             borderRadius="lg"
           >
             <option value="">All</option>
@@ -264,7 +351,9 @@ const KeyCapsPage = () => {
         </Flex>
 
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Brand:</Text>
+          <Text fontWeight="bold" fontSize="sm">
+            Brand:
+          </Text>
           <Select
             bg="white"
             color="black"
@@ -275,9 +364,11 @@ const KeyCapsPage = () => {
             borderRadius="md"
           >
             <option value="">All</option>
-            <option value="Akko">Akko</option>
-            <option value="GMK">GMK</option>
-            <option value="PBTFANS">PBTFANS</option>
+            {brandOptions.map((brandOption) => (
+              <option key={brandOption} value={brandOption}>
+                {brandOption}
+              </option>
+                ))}
           </Select>
         </Flex>
       </Flex>
@@ -299,7 +390,9 @@ const KeyCapsPage = () => {
             textAlign="center"
             bg="gray.50"
           >
-            <Text color="red.500" fontSize="lg">{error}</Text>
+            <Text color="red.500" fontSize="lg">
+              {error}
+            </Text>
             <Button
               mt={4}
               size="sm"
@@ -390,7 +483,7 @@ const KeyCapsPage = () => {
             mx="auto"
           >
             <Text fontSize="lg" color="gray.500">
-              No keycaps found with the selected filters.
+              No keycaps found.
             </Text>
             <Button mt={4} colorScheme="gray" onClick={clearAllFilters}>
               Clear All Filters

@@ -27,6 +27,7 @@ const MotionBox = motion(Box);
 const OthersPage = () => {
   const [others, setOthers] = useState([]);
   const [filteredOthers, setFilteredOthers] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [availability, setAvailability] = useState("");
@@ -41,39 +42,110 @@ const OthersPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = `/api/others?_t=${Date.now()}`;
-      console.log("Fetching others with URL:", url);
+      const url = "http://localhost:5000/api/others";
+      console.log("Fetching from URL:", url);
       const response = await fetch(url);
-      console.log("Response headers:", [...response.headers.entries()]);
+
       if (!response.ok) {
         const text = await response.text();
-        console.log("Response status:", response.status);
-        console.log("Response error text:", text.slice(0, 100));
-        throw new Error(`Failed to fetch accessories: ${response.status} ${text.slice(0, 100)}`);
+        console.error("Response Text:", text);
+        throw new Error(
+          `Failed to fetch accessories: ${response.status} ${text.slice(
+            0,
+            100
+          )}`
+        );
       }
+
       const data = await response.json();
-      console.log("Raw API Data:", data);
+      console.log("Raw API Data:", JSON.stringify(data, null, 2));
 
-      const validData = data.filter(
-        (item) =>
+      // Handle single object or array
+      let othersArray;
+      if (Array.isArray(data)) {
+        othersArray = data.filter(
+          (product) =>
+            !product.category || product.category?.toLowerCase() === "others"
+        );
+      } else if (data && typeof data === "object") {
+        console.log("Received single object, wrapping in array");
+        othersArray =
+          !data.category || data.category?.toLowerCase() === "others"
+            ? [data]
+            : [];
+      } else {
+        console.error("Unexpected data format:", data);
+        othersArray = [];
+      }
+      console.log("Filtered Accessories:", othersArray);
+
+      // Log items that fail validation
+      const invalidItems = [];
+      const validData = othersArray.filter((item) => {
+        const isValid =
           item &&
-          typeof item.id === "number" &&
+          (item._id || item.id) &&
           typeof item.name === "string" &&
-          item.name.trim() &&
-          typeof item.price === "number" &&
-          item.price >= 0 &&
-          typeof item.image === "string" &&
-          item.image.trim() &&
-          item.image !== "null" &&
-          typeof item.availability === "string" &&
-          ["in-stock", "out-of-stock"].includes(item.availability) &&
-          typeof item.brand === "string" &&
-          item.brand.trim()
-      );
-
+          item.name.trim();
+        if (!isValid) {
+          invalidItems.push({
+            item,
+            reasons: [
+              !item && "Item is null or undefined",
+              !(item._id || item.id) && "Missing id",
+              typeof item.name !== "string" && "Name is not a string",
+              item.name && !item.name.trim() && "Name is empty",
+            ].filter(Boolean),
+          });
+        }
+        return isValid;
+      });
+      if (invalidItems.length > 0) {
+        console.warn("Invalid items filtered out:", invalidItems);
+      }
       console.log("Valid Data:", validData);
-      setOthers(validData);
-      setFilteredOthers(validData);
+
+      // Process data with defaults
+      const processedData = validData.map((item) => {
+        if (!item.brand || !item.brand.trim()) {
+          console.log(
+            `Assigned Unknown brand to keyboard: ${item.name || item._id}`
+          );
+        }
+        return {
+          ...item,
+          id: item._id || item.id,
+          price:
+            typeof item.price === "number" && item.price >= 0 ? item.price : 0,
+          brand:
+            typeof item.brand === "string" && item.brand.trim()
+              ? item.brand
+              : "Unknown",
+          category: item.category?.toLowerCase() || "others", // Normalize category
+          image:
+            typeof item.image === "string" &&
+            item.image.trim() &&
+            item.image !== "null"
+              ? item.image
+              : "https://via.placeholder.com/100",
+          availability:
+            typeof item.quantity === "number" && item.quantity > 0
+              ? "in-stock"
+              : "out-of-stock",
+        };
+      });
+      console.log("Processed Data:", processedData);
+
+      if (processedData.length === 0) {
+        console.warn("No valid accessories after processing");
+      }
+      const uniqueBrands = [
+        ...new Set(processedData.map((keyboard) => keyboard.brand)),
+      ].sort();
+
+      setOthers(processedData);
+      setFilteredOthers(processedData);
+      setBrandOptions(uniqueBrands);
     } catch (error) {
       console.error("Error fetching accessories:", error);
       setError(error.message);
@@ -88,25 +160,16 @@ const OthersPage = () => {
 
   useEffect(() => {
     fetchOthers();
+    console.log("Accessories fetched on mount:", others);
   }, []);
 
   useEffect(() => {
-    // Trigger loading state for filter/search changes
     setLoading(true);
     setLoadingDelay(true);
 
     let filtered = [...others];
 
-    filtered = filtered.filter(
-      (item) =>
-        item &&
-        item.id &&
-        item.name &&
-        item.image &&
-        item.image.trim() &&
-        item.image !== "null" &&
-        item.price !== undefined
-    );
+    filtered = filtered.filter((item) => item && item.id && item.name);
 
     console.log("Initial Accessories for Filtering:", filtered);
 
@@ -121,7 +184,16 @@ const OthersPage = () => {
       console.log("After maxPrice filter:", filtered);
     }
     if (availability && availability !== "") {
-      filtered = filtered.filter((item) => item.availability === availability);
+      filtered = filtered.filter((item) => {
+        if (item.availability) {
+          return item.availability === availability;
+        } else {
+          return (
+            (availability === "in-stock" && item.quantity > 0) ||
+            (availability === "out-of-stock" && item.quantity <= 0)
+          );
+        }
+      });
       console.log("After availability filter:", filtered);
     }
     if (brand && brand !== "") {
@@ -138,7 +210,6 @@ const OthersPage = () => {
 
     setFilteredOthers(filtered);
 
-    // Reset loading state after delay
     const timer = setTimeout(() => {
       setLoading(false);
       setLoadingDelay(false);
@@ -169,8 +240,22 @@ const OthersPage = () => {
   }, [filteredOthers]);
 
   return (
-    <Box h="calc(104vh - 120px)" overflowY="auto" bg="gray.30" px={4} py={8} maxW="auto" mx="auto">
-      <Heading as="h1" mb={6} color="gray.800" textAlign="center" fontWeight="bold">
+    <Box
+      h="calc(104vh - 120px)"
+      overflowY="auto"
+      bg="gray.30"
+      px={4}
+      py={8}
+      maxW="auto"
+      mx="auto"
+    >
+      <Heading
+        as="h1"
+        mb={6}
+        color="gray.800"
+        textAlign="center"
+        fontWeight="bold"
+      >
         Accessories
       </Heading>
 
@@ -200,7 +285,9 @@ const OthersPage = () => {
           onClick={clearAllFilters}
           colorScheme="gray"
           ml={{ base: 0, md: "auto" }}
-          isDisabled={!searchQuery && !minPrice && !maxPrice && !availability && !brand}
+          isDisabled={
+            !searchQuery && !minPrice && !maxPrice && !availability && !brand
+          }
         >
           Clear All
         </Button>
@@ -216,7 +303,9 @@ const OthersPage = () => {
         borderRadius="md"
       >
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Price Range:</Text>
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">
+            Price Range:
+          </Text>
           <Flex>
             <Input
               placeholder="MIN"
@@ -247,7 +336,9 @@ const OthersPage = () => {
         </Flex>
 
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Availability:</Text>
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">
+            Availability:
+          </Text>
           <Select
             bg="white"
             color="black"
@@ -264,7 +355,9 @@ const OthersPage = () => {
         </Flex>
 
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Brand:</Text>
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">
+            Brand:
+          </Text>
           <Select
             bg="white"
             color="black"
@@ -275,8 +368,11 @@ const OthersPage = () => {
             borderRadius="md"
           >
             <option value="">All</option>
-            <option value="Akko">Akko</option>
-            <option value="Gateron">Gateron</option>
+            {brandOptions.map((brandOption) => (
+              <option key={brandOption} value={brandOption}>
+                {brandOption}
+              </option>
+            ))}
           </Select>
         </Flex>
       </Flex>
@@ -298,7 +394,9 @@ const OthersPage = () => {
             textAlign="center"
             bg="gray.50"
           >
-            <Text color="red.500" fontSize="lg">{error}</Text>
+            <Text color="red.500" fontSize="lg">
+              {error}
+            </Text>
             <Button
               mt={4}
               size="sm"
@@ -389,7 +487,7 @@ const OthersPage = () => {
             mx="auto"
           >
             <Text fontSize="lg" color="gray.500">
-              No accessories found with the selected filters.
+              No accessories found.
             </Text>
             <Button mt={4} colorScheme="gray" onClick={clearAllFilters}>
               Clear All Filters

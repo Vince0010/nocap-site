@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 const MotionBox = motion(Box);
 const MotionImg = motion.img;
 
-export const ProductBox = ({ item, index, category }) => {
+export const ProductBox = ({ item, index }) => {
   const [isHovered, setIsHovered] = useState(false);
   const controls = useAnimation();
   const ref = useRef(null);
@@ -41,20 +41,20 @@ export const ProductBox = ({ item, index, category }) => {
     };
   }, [controls]);
 
-  // Validation: Make altImage optional
+  // Validation: Make sure item has required properties and category
   if (
     !item ||
     !item.name ||
     !item.image ||
     !item.id ||
-    !category
+    !item.category // Now category is required within the item object
   ) {
-    console.warn("Invalid item data or category:", item, category);
+    console.warn("Invalid item data:", item);
     return null; // Skip rendering invalid items
   }
 
   return (
-    <Link to={`/${category}/${item.id}`} style={{ textDecoration: "none" }}>
+    <Link to={`/${item.category}/${item.id}`} style={{ textDecoration: "none" }}>
       <MotionBox
         ref={ref}
         key={index}
@@ -168,7 +168,7 @@ export const ProductBox = ({ item, index, category }) => {
   );
 };
 
-export const AnimatedProductRow = ({ title, items, category }) => {
+export const AnimatedProductRow = ({ title, items }) => {
   console.log("AnimatedProductRow items:", items);
   const ref = useRef(null);
   const controls = useAnimation();
@@ -201,7 +201,7 @@ export const AnimatedProductRow = ({ title, items, category }) => {
       item.id &&
       item.name &&
       item.image &&
-      category
+      item.category // Now requiring category in each item
   );
 
   if (validItems.length === 0) {
@@ -234,7 +234,6 @@ export const AnimatedProductRow = ({ title, items, category }) => {
               key={item.id || index}
               item={item}
               index={index}
-              category={category}
             />
           ))}
         </SimpleGrid>

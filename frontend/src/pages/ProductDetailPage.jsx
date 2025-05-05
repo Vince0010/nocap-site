@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
@@ -16,6 +17,37 @@ import {
 
 const VALID_CATEGORIES = ['keyboards', 'switches', 'keycaps', 'others'];
 
+const schemaAttributes = {
+  switches: {
+    attributes: [
+      'switchType',
+      'actuationForce',
+      'bottomOutForce',
+      'preTravel',
+      'totalTravel',
+      'topHousingMaterial',
+      'stemMaterial',
+    ],
+  },
+  keycaps: {
+    attributes: ['profile', 'material', 'layoutCompatibility', 'stemType'],
+  },
+  keyboards: {
+    attributes: [
+      'layoutSize',
+      'layoutStandard',
+      'isHotSwappable',
+      'connectivity',
+      'caseMaterial',
+      'keycapMaterial',
+      'mountType',
+    ],
+  },
+  others: {
+    attributes: ['category', 'type'],
+  },
+};
+
 const ProductDetailPage = () => {
   const { category, id } = useParams();
   const [product, setProduct] = useState(null);
@@ -23,45 +55,103 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState('');
 
+  const placeholder = 'https://via.placeholder.com/100';
+
+  const fetchProduct = async () => {
+    if (!VALID_CATEGORIES.includes(category)) {
+      setError('Invalid product category');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/${category}/${id}`);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to fetch product: ${response.status} ${text.slice(0, 100)}`);
+      }
+      const data = await response.json();
+      console.log('Fetched product:', data);
+
+      // Normalize and process product data
+      const processedProduct = {
+        ...data,
+        id: data._id || data.id,
+        category: data.category?.toLowerCase() || category, // Normalize category
+        image:
+          typeof data.image === 'string' && data.image.trim() && data.image !== 'null'
+            ? data.image
+            : placeholder,
+        altImage:
+          typeof data.altImage === 'string' && data.altImage.trim() && data.altImage !== 'null'
+            ? data.altImage
+            : placeholder,
+        availability: data.quantity > 0 ? 'in-stock' : 'out-of-stock',
+        description:
+          typeof data.description === 'string' && data.description.trim()
+            ? data.description
+            : 'No description available.',
+        brand:
+          typeof data.brand === 'string' && data.brand.trim() ? data.brand : 'Unknown',
+      };
+      setProduct(processedProduct);
+      setSelectedImage(processedProduct.image);
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProduct = async () => {
-      if (!VALID_CATEGORIES.includes(category)) {
-        setError('Invalid product category');
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/${category}/${id}`);
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`HTTP error! Status: ${response.status}, Text: ${text.slice(0, 100)}`);
-        }
-        const data = await response.json();
-        console.log('Fetched product:', data);
-        setProduct(data);
-        setSelectedImage(data.image);
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProduct();
   }, [category, id]);
 
   // Function to handle image click and set it as the main displayed image
   const handleImageClick = (imageSrc) => {
     setSelectedImage(imageSrc);
-    // Scroll back to the main image if needed
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
+  };
+
+  // Function to get specifications based on category
+  const getSpecifications = (product, category) => {
+    const attributes = schemaAttributes[category]?.attributes || [];
+    const specs = [];
+
+    attributes.forEach((attr) => {
+      let value = product[attr];
+      if (value === undefined || value === null || value === '') {
+        value = 'No info';
+      } else if (typeof value === 'boolean') {
+        value = value ? 'Yes' : 'No';
+      } else if (Array.isArray(value)) {
+        value = value.join(', ');
+      }
+      specs.push({
+        label: attr
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+          .trim(),
+        value,
+      });
+    });
+
+    // Add generic specs if none are defined
+    if (specs.length === 0) {
+      specs.push(
+        { label: 'Category', value: category.charAt(0).toUpperCase() + category.slice(1) },
+        { label: 'Brand', value: product.brand },
+        { label: 'Type', value: product.type || 'Standard' }
+      );
+    }
+
+    return specs;
   };
 
   if (error) {
@@ -96,33 +186,41 @@ const ProductDetailPage = () => {
     );
   }
 
-  // For demonstration purposes, creating an array of images including the main one and alternates
-  // In a real app, this would come from the product data
-  const productImages = [
-    product.image,
-    product.altImage,
-    // Additional placeholder images
-    product.image,
-    product.altImage,
-    product.image,
-    product.altImage,
-    product.image,
-    product.altImage,
-    product.image,
-    product.altImage,
-    product.image,
-    product.altImage,
-  ];
+  // Create product images array based on available images
+  const productImages = [];
+  if (product.image !== placeholder) {
+    productImages.push(product.image);
+  }
+  if (
+    product.altImage !== placeholder &&
+    product.altImage !== product.image
+  ) {
+    productImages.push(product.altImage);
+  }
+  // If no valid images, use a single placeholder
+  if (productImages.length === 0) {
+    productImages.push(placeholder);
+  }
+  console.log('Product images count:', productImages.length);
 
-  // For full-sized render images section
-  const fullSizeRenders = [
-    product.image,
-    product.altImage,
-    product.image,
-    product.altImage,
-    product.image,
-    product.altImage,
-  ];
+  // Create full-sized renders array based on available images
+  const fullSizeRenders = [];
+  if (product.image !== placeholder) {
+    fullSizeRenders.push(product.image);
+  }
+  if (
+    product.altImage !== placeholder &&
+    product.altImage !== product.image
+  ) {
+    fullSizeRenders.push(product.altImage);
+  }
+  // If no valid images, use a single placeholder
+  if (fullSizeRenders.length === 0) {
+    fullSizeRenders.push(placeholder);
+  }
+
+  // Get specifications
+  const specifications = getSpecifications(product, category);
 
   return (
     <Box overflowY="auto" h="calc(103.3vh - 120px)" bg="#f5f5f5">
@@ -144,23 +242,22 @@ const ProductDetailPage = () => {
               w="100%"
               h={{ base: '300px', md: '450px' }}
               bg="#f9f9f9"
+              fallbackSrc={placeholder}
             />
-            
-            {/* Image grid below main image - Now visible on all screen sizes */}
+
+            {/* Image grid below main image */}
             <Box mt={6}>
               <Text fontWeight="medium" mb={3}>Product Images</Text>
-              <Grid 
-                templateColumns={{ 
-                  base: "repeat(3, 1fr)", 
-                  sm: "repeat(4, 1fr)", 
-                  md: "repeat(5, 1fr)", 
-                  lg: "repeat(6, 1fr)" 
-                }}
+              <Grid
+                templateColumns="repeat(auto-fit, minmax(100px, 1fr))"
+                gridAutoRows="100px"
                 gap={3}
               >
                 {productImages.map((img, index) => (
                   <Box
                     key={index}
+                    maxW="100px"
+                    maxH="100px"
                     border={selectedImage === img ? '2px solid #3182CE' : '1px solid #E2E8F0'}
                     borderRadius="md"
                     overflow="hidden"
@@ -171,10 +268,16 @@ const ProductDetailPage = () => {
                   >
                     <Image
                       src={img}
-                      alt={`${product.name} view ${index + 1}`}
+                      alt={
+                        img === placeholder
+                          ? `${product.name} placeholder`
+                          : `${product.name} view ${index + 1}`
+                      }
                       objectFit="cover"
                       w="100%"
+                      h="100%"
                       aspectRatio="1/1"
+                      fallbackSrc={placeholder}
                     />
                   </Box>
                 ))}
@@ -188,40 +291,43 @@ const ProductDetailPage = () => {
             <Text fontSize="xl" fontWeight="bold" color="#3182CE">
               ₱{parseFloat(product.price).toFixed(2)}
             </Text>
-            
+
             <Divider />
-            
+
             <Text>
               <Text as="span" fontWeight="medium">Availability:</Text>{' '}
               <Text as="span" color={product.availability === 'in-stock' ? 'green.500' : 'red.500'}>
                 {product.availability === 'in-stock' ? 'In Stock' : 'Out of Stock'}
               </Text>
             </Text>
-            
+
             <Text>
               <Text as="span" fontWeight="medium">Brand:</Text> {product.brand}
             </Text>
-            
+
+            <Text>
+              <Text as="span" fontWeight="medium">Category:</Text>{' '}
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </Text>
+
             <Divider />
-            
+
             <Text fontWeight="medium">Description</Text>
             <Text fontSize="sm" color="gray.700">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              {product.description}
             </Text>
-            
+
             <Divider />
-            
+
             <Box width="100%">
               <Text fontWeight="medium" mb={2}>Specifications</Text>
               <Grid templateColumns="1fr 2fr" gap={2} fontSize="sm">
-                <Text color="gray.600">Material</Text>
-                <Text>{product.brand === 'Akko' ? 'PBT' : 'ABS'}</Text>
-                
-                <Text color="gray.600">Category</Text>
-                <Text>{category.charAt(0).toUpperCase() + category.slice(1)}</Text>
-                
-                <Text color="gray.600">Type</Text>
-                <Text>{product.type || 'Standard'}</Text>
+                {specifications.map((spec, index) => (
+                  <React.Fragment key={index}>
+                    <Text color="gray.600">{spec.label}</Text>
+                    <Text>{spec.value}</Text>
+                  </React.Fragment>
+                ))}
               </Grid>
             </Box>
           </VStack>
@@ -234,17 +340,29 @@ const ProductDetailPage = () => {
           <Heading size="md" textAlign="center" mb={8}>
             Product Renders
           </Heading>
-          
+
           <VStack spacing={12}>
             {fullSizeRenders.map((img, index) => (
-              <Box key={index} width="100%" boxShadow="sm" bg="#f5f5f5" p={4} borderRadius="lg">
+              <Box
+                key={index}
+                width="100%"
+                boxShadow="sm"
+                bg="#f5f5f5"
+                p={4}
+                borderRadius="lg"
+              >
                 <Image
                   src={img}
-                  alt={`${product.name} full render ${index + 1}`}
+                  alt={
+                    img === placeholder
+                      ? `${product.name} placeholder`
+                      : `${product.name} full render ${index + 1}`
+                  }
                   objectFit="contain"
                   w="100%"
-                  h={{ base: "300px", md: "600px" }}
+                  h={{ base: '300px', md: '600px' }}
                   borderRadius="md"
+                  fallbackSrc={placeholder}
                 />
               </Box>
             ))}

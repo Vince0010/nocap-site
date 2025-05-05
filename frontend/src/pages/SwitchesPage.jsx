@@ -27,6 +27,7 @@ const MotionBox = motion(Box);
 const SwitchesPage = () => {
   const [switches, setSwitches] = useState([]);
   const [filteredSwitches, setFilteredSwitches] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [availability, setAvailability] = useState("");
@@ -41,39 +42,82 @@ const SwitchesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = `/api/switches?_t=${Date.now()}`;
-      console.log("Fetching switches with URL:", url);
+      const url = "http://localhost:5000/api/switches";
+      console.log("Fetching from URL:", url);
       const response = await fetch(url);
-      console.log("Response headers:", [...response.headers.entries()]);
+
       if (!response.ok) {
         const text = await response.text();
-        console.log("Response status:", response.status);
-        console.log("Response error text:", text.slice(0, 100));
-        throw new Error(`Failed to fetch switches: ${response.status} ${text.slice(0, 100)}`);
+        console.error("Response Text:", text);
+        throw new Error(
+          `Failed to fetch switches: ${response.status} ${text.slice(0, 100)}`
+        );
       }
+
       const data = await response.json();
-      console.log("Raw API Data:", data);
+      console.log("Raw API Data:", JSON.stringify(data, null, 2));
 
-      const validData = data.filter(
-        (item) =>
-          item &&
-          typeof item.id === "number" &&
-          typeof item.name === "string" &&
-          item.name.trim() &&
-          typeof item.price === "number" &&
-          item.price >= 0 &&
-          typeof item.image === "string" &&
-          item.image.trim() &&
-          item.image !== "null" &&
-          typeof item.availability === "string" &&
-          ["in-stock", "out-of-stock"].includes(item.availability) &&
-          typeof item.brand === "string" &&
-          item.brand.trim()
+      // Handle single object or array
+      let switchesArray;
+      if (Array.isArray(data)) {
+        switchesArray = data.filter(
+          (product) => product.category?.toLowerCase() === "switches"
+        );
+      } else if (data && typeof data === "object") {
+        console.log("Received single object, wrapping in array");
+        switchesArray =
+          data.category?.toLowerCase() === "switches" ? [data] : [];
+      } else {
+        console.error("Unexpected data format:", data);
+        switchesArray = [];
+      }
+      console.log("Filtered Switches:", switchesArray);
+
+      // Validate data
+      const validData = switchesArray.filter(
+        (switchItem) =>
+          switchItem &&
+          (switchItem._id || switchItem.id) &&
+          typeof switchItem.name === "string" &&
+          switchItem.name.trim() &&
+          typeof switchItem.price === "number" &&
+          switchItem.price >= 0 &&
+          typeof switchItem.brand === "string" &&
+          switchItem.brand.trim() &&
+          (!switchItem.image ||
+            (typeof switchItem.image === "string" &&
+              switchItem.image.trim() &&
+              switchItem.image !== "null"))
       );
-
       console.log("Valid Data:", validData);
-      setSwitches(validData);
-      setFilteredSwitches(validData);
+
+      // Process data
+      const processedData = validData.map((switchItem) => {
+        if (!switchItem.brand || !switchItem.brand.trim()) {
+          console.log(
+            `Assigned Unknown brand to keyboard: ${
+              switchItem.name || switchItem._id
+            }`
+          );
+        }
+        return {
+          ...switchItem,
+          id: switchItem._id || switchItem.id,
+          category: switches.category?.toLowerCase() || "switches",
+          availability: switchItem.quantity > 0 ? "in-stock" : "out-of-stock",
+        };
+      });
+      console.log("Processed Data:", processedData);
+
+      if (processedData.length === 0) {
+        console.warn("No valid switches after processing");
+      }
+      const uniqueBrands = [
+        ...new Set(processedData.map((keycaps) => keycaps.brand)),
+      ].sort();
+      setSwitches(processedData);
+      setFilteredSwitches(processedData);
+      setBrandOptions(uniqueBrands);
     } catch (error) {
       console.error("Error fetching switches:", error);
       setError(error.message);
@@ -88,6 +132,7 @@ const SwitchesPage = () => {
 
   useEffect(() => {
     fetchSwitches();
+    console.log("Switches fetched on mount:", switches);
   }, []);
 
   useEffect(() => {
@@ -98,40 +143,53 @@ const SwitchesPage = () => {
     let filtered = [...switches];
 
     filtered = filtered.filter(
-      (item) =>
-        item &&
-        item.id &&
-        item.name &&
-        item.image &&
-        item.image.trim() &&
-        item.image !== "null" &&
-        item.price !== undefined
+      (switchItem) =>
+        switchItem &&
+        (switchItem._id || switchItem.id) &&
+        switchItem.name &&
+        switchItem.price !== undefined &&
+        // Avoid requiring image to be present
+        (!switchItem.image ||
+          (switchItem.image &&
+            switchItem.image.trim() &&
+            switchItem.image !== "null"))
     );
 
     console.log("Initial Switches for Filtering:", filtered);
 
     if (minPrice && !isNaN(minPrice) && minPrice !== "") {
       const min = parseFloat(minPrice);
-      filtered = filtered.filter((item) => item.price >= min);
+      filtered = filtered.filter((switchItem) => switchItem.price >= min);
       console.log("After minPrice filter:", filtered);
     }
     if (maxPrice && !isNaN(maxPrice) && maxPrice !== "") {
       const max = parseFloat(maxPrice);
-      filtered = filtered.filter((item) => item.price <= max);
+      filtered = filtered.filter((switchItem) => switchItem.price <= max);
       console.log("After maxPrice filter:", filtered);
     }
     if (availability && availability !== "") {
-      filtered = filtered.filter((item) => item.availability === availability);
+      filtered = filtered.filter((switchItem) => {
+        // Check for both the added availability field and the quantity field
+        if (switchItem.availability) {
+          return switchItem.availability === availability;
+        } else {
+          // Fallback to determining availability from quantity
+          return (
+            (availability === "in-stock" && switchItem.quantity > 0) ||
+            (availability === "out-of-stock" && switchItem.quantity <= 0)
+          );
+        }
+      });
       console.log("After availability filter:", filtered);
     }
     if (brand && brand !== "") {
-      filtered = filtered.filter((item) => item.brand === brand);
+      filtered = filtered.filter((switchItem) => switchItem.brand === brand);
       console.log("After brand filter:", filtered);
     }
     if (debouncedSearchQuery.trim()) {
       const lowerCaseQuery = debouncedSearchQuery.toLowerCase().trim();
-      filtered = filtered.filter((item) =>
-        item.name?.toLowerCase().includes(lowerCaseQuery)
+      filtered = filtered.filter((switchItem) =>
+        switchItem.name?.toLowerCase().includes(lowerCaseQuery)
       );
       console.log("After search filter:", filtered);
     }
@@ -169,8 +227,22 @@ const SwitchesPage = () => {
   }, [filteredSwitches]);
 
   return (
-    <Box h="calc(104vh - 120px)" overflowY="auto" bg="gray.30" px={4} py={8} maxW="auto" mx="auto">
-      <Heading as="h1" mb={6} color="gray.800" textAlign="center" fontWeight="bold">
+    <Box
+      h="calc(104vh - 120px)"
+      overflowY="auto"
+      bg="gray.30"
+      px={4}
+      py={8}
+      maxW="auto"
+      mx="auto"
+    >
+      <Heading
+        as="h1"
+        mb={6}
+        color="gray.800"
+        textAlign="center"
+        fontWeight="bold"
+      >
         Switches
       </Heading>
 
@@ -200,7 +272,9 @@ const SwitchesPage = () => {
           onClick={clearAllFilters}
           colorScheme="gray"
           ml={{ base: 0, md: "auto" }}
-          isDisabled={!searchQuery && !minPrice && !maxPrice && !availability && !brand}
+          isDisabled={
+            !searchQuery && !minPrice && !maxPrice && !availability && !brand
+          }
         >
           Clear All
         </Button>
@@ -216,7 +290,9 @@ const SwitchesPage = () => {
         borderRadius="md"
       >
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Price Range:</Text>
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">
+            Price Range:
+          </Text>
           <Flex>
             <Input
               placeholder="MIN"
@@ -247,7 +323,9 @@ const SwitchesPage = () => {
         </Flex>
 
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Availability:</Text>
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">
+            Availability:
+          </Text>
           <Select
             bg="white"
             color="black"
@@ -264,7 +342,9 @@ const SwitchesPage = () => {
         </Flex>
 
         <Flex direction={{ base: "column", sm: "row" }} gap={2} align="center">
-          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">Brand:</Text>
+          <Text fontWeight="bold" whiteSpace="nowrap" fontSize="sm">
+            Brand:
+          </Text>
           <Select
             bg="white"
             color="black"
@@ -275,8 +355,11 @@ const SwitchesPage = () => {
             borderRadius="md"
           >
             <option value="">All</option>
-            <option value="Akko">Akko</option>
-            <option value="Gateron">Gateron</option>
+            {brandOptions.map((brandOption) => (
+              <option key={brandOption} value={brandOption}>
+                {brandOption}
+              </option>
+            ))}
           </Select>
         </Flex>
       </Flex>
@@ -298,7 +381,9 @@ const SwitchesPage = () => {
             textAlign="center"
             bg="gray.50"
           >
-            <Text color="red.500" fontSize="lg">{error}</Text>
+            <Text color="red.500" fontSize="lg">
+              {error}
+            </Text>
             <Button
               mt={4}
               size="sm"
@@ -389,7 +474,7 @@ const SwitchesPage = () => {
             mx="auto"
           >
             <Text fontSize="lg" color="gray.500">
-              No switches found with the selected filters.
+              No switches found.
             </Text>
             <Button mt={4} colorScheme="gray" onClick={clearAllFilters}>
               Clear All Filters

@@ -35,21 +35,139 @@ import { useDebounce } from "use-debounce";
 import { AnimatedProductRow, ProductBox } from "../components/ProductComponents";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Add the MotionBox component from KeyboardPage
 const MotionBox = motion(Box);
 
-// Product categories and their specific comparable attributes
-const categoryAttributes = {
-  keycaps: ["Profile", "Material", "Layout Compatibility", "Stem Type"],
-  switches: ["Type", "Actuation Force", "Travel Distance", "Pre-Travel"],
-  keyboards: ["Size", "Connection", "Hot-Swappable", "RGB", "Case Material"],
-  accessories: ["Type", "Compatibility", "Material"],
+// Schema-based attributes for comparison, derived from database models
+const schemaAttributes = {
+  switches: {
+    attributes: [
+      "releaseYear",
+      "switchType",
+      "isFactoryLubed",
+      "switchProfile",
+      "actuationForce",
+      "bottomOutForce",
+      "preTravel",
+      "totalTravel",
+      "pins",
+      "isHallEffect",
+      "topHousingMaterial",
+      "bottomHousingMaterial",
+      "stemMaterial",
+      "springs",
+      "isLongPole",
+    ],
+    displayLabels: {
+      releaseYear: "Release Year",
+      switchType: "Switch Type",
+      isFactoryLubed: "Factory Lubed",
+      switchProfile: "Switch Profile",
+      actuationForce: "Actuation Force",
+      bottomOutForce: "Bottom-Out Force",
+      preTravel: "Pre-Travel",
+      totalTravel: "Total Travel",
+      pins: "Pins",
+      isHallEffect: "Hall Effect",
+      topHousingMaterial: "Top Housing Material",
+      bottomHousingMaterial: "Bottom Housing Material",
+      stemMaterial: "Stem Material",
+      springs: "Springs",
+      isLongPole: "Long Pole",
+    },
+  },
+  keycaps: {
+    attributes: [
+      "profile",
+      "material",
+      "layoutCompatibility",
+      "stemType",
+    ],
+    displayLabels: {
+      profile: "Profile",
+      material: "Material",
+      layoutCompatibility: "Layout Compatibility",
+      stemType: "Stem Type",
+    },
+  },
+  keyboards: {
+    attributes: [
+      "releaseYear",
+      "switchOptions",
+      "plateMaterial",
+      "profile",
+      "isHotSwappable",
+      "layoutSize",
+      "layoutStandard",
+      "layoutErgonomics",
+      "connectivity",
+      "pollingRate",
+      "batteryCapacity",
+      "mountType",
+      "backlight",
+      "caseColors",
+      "caseMaterial",
+      "keycapMaterial",
+      "dimensions",
+      "weight",
+      "knobSupport",
+      "displaySupport",
+      "multiMediaKeys",
+      "winmacSupport",
+      "usb_C",
+      "hallEffectSupport",
+      "qmkSupport",
+      "viaSupport",
+      "nkeyRollover",
+      "screwInStabilizers",
+      "soundDampening",
+    ],
+    displayLabels: {
+      releaseYear: "Release Year",
+      switchOptions: "Switch Options",
+      plateMaterial: "Plate Material",
+      profile: "Profile",
+      isHotSwappable: "Hot Swappable",
+      layoutSize: "Layout Size",
+      layoutStandard: "Layout Standard",
+      layoutErgonomics: "Layout Ergonomics",
+      connectivity: "Connectivity",
+      pollingRate: "Polling Rate",
+      batteryCapacity: "Battery Capacity",
+      mountType: "Mount Type",
+      backlight: "Backlight",
+      caseColors: "Case Colors",
+      caseMaterial: "Case Material",
+      keycapMaterial: "Keycap Material",
+      dimensions: "Dimensions",
+      weight: "Weight",
+      knobSupport: "Knob Support",
+      displaySupport: "Display Support",
+      multiMediaKeys: "Multimedia Keys",
+      winmacSupport: "Windows/Mac Support",
+      usb_C: "USB-C",
+      hallEffectSupport: "Hall Effect Support",
+      qmkSupport: "QMK Support",
+      viaSupport: "VIA Support",
+      nkeyRollover: "N-Key Rollover",
+      screwInStabilizers: "Screw-In Stabilizers",
+      soundDampening: "Sound Dampening",
+    },
+  },
+  others: {
+    attributes: [
+      "category",
+    ],
+    displayLabels: {
+      category: "Category",
+    },
+  },
 };
 
 const ComparePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("keycaps");
   const [comparedProducts, setComparedProducts] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
+  const [categoryAttributes, setCategoryAttributes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingDelay, setLoadingDelay] = useState(false);
@@ -64,63 +182,87 @@ const ComparePage = () => {
     setLoadingDelay(true);
     setError(null);
     try {
-      const fetchCategory = selectedCategory === "accessories" ? "others" : selectedCategory;
+      const fetchCategory = selectedCategory === "others" ? "others" : selectedCategory;
       const queryParamsObj = {};
       if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
         queryParamsObj.search = debouncedSearchQuery.trim();
       }
       const queryParams = new URLSearchParams(queryParamsObj).toString();
-      const url = queryParams
-        ? `/api/${fetchCategory}?${queryParams}&_t=${Date.now()}`
-        : `/api/${fetchCategory}?_t=${Date.now()}`;
-
+      const url = `http://localhost:5000/api/${fetchCategory}${queryParams ? `?${queryParams}` : ""}`;
       console.log(`Fetching ${selectedCategory} with URL:`, url);
+
       const response = await fetch(url);
       console.log("Response headers:", [...response.headers.entries()]);
       if (!response.ok) {
         const text = await response.text();
-        console.log("Response status:", response.status);
-        console.log("Response error text:", text.slice(0, 100));
+        console.error("Response status:", response.status, "Response error text:", text.slice(0, 100));
         throw new Error(`Failed to fetch ${selectedCategory}: ${response.status} ${text.slice(0, 100)}`);
       }
-      const data = await response.json();
-      console.log(`Fetched ${selectedCategory}:`, data);
 
-      // Validate data - similar to KeyboardPage validation
-      const validData = data.filter(
+      const data = await response.json();
+      console.log(`Raw API Data for ${selectedCategory}:`, JSON.stringify(data, null, 2));
+
+      // Handle single object or array
+      const productsArray = Array.isArray(data) ? data : [data];
+      console.log(`Processed ${selectedCategory} Array:`, productsArray);
+
+      // Validate data (aligned with othersSchema for others, generic for others)
+      const validData = productsArray.filter(
         (product) =>
           product &&
-          typeof product.id === "number" &&
+          (product._id || product.id) &&
           typeof product.name === "string" &&
           product.name.trim() &&
-          typeof product.price === "number" &&
-          product.price >= 0 &&
-          typeof product.image === "string" &&
-          product.image.trim() &&
-          product.image !== "null" &&
-          typeof product.availability === "string" &&
-          ["in-stock", "out-of-stock"].includes(product.availability)
+          (selectedCategory !== "others" ||
+            (typeof product.description === "string" &&
+              product.description.trim() &&
+              typeof product.price === "number" &&
+              product.price >= 0 &&
+              typeof product.quantity === "number" &&
+              product.category)) &&
+          (!product.image ||
+            (typeof product.image === "string" &&
+              product.image.trim() &&
+              product.image !== "null"))
       );
-      
-      if (validData.length < data.length) {
+      console.log(`Valid Data for ${selectedCategory}:`, validData);
+
+      if (validData.length < productsArray.length) {
         console.warn(
           `Invalid ${selectedCategory} entries filtered out:`,
-          data.filter((product) => !validData.includes(product))
+          productsArray.filter((product) => !validData.includes(product))
         );
       }
 
+      // Set category attributes based on schema
+      const attributes = schemaAttributes[selectedCategory]?.attributes || [];
+      console.log(`Schema Attributes for ${selectedCategory}:`, attributes);
+      setCategoryAttributes(attributes);
+
       // Map backend data to match ComparePage structure
-      const mappedProducts = validData.map((product) => ({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        formattedPrice: product.price ? `₱${parseFloat(product.price).toFixed(2)}` : null,
-        image: product.image,
-        altImage: product.altImage,
-        attributes: product.attributes || {},
-        description: product.description || `Premium ${selectedCategory} product.`,
-        inStock: product.availability === "in-stock",
-      }));
+      const mappedProducts = validData.map((product) => {
+        // Extract attributes from schema-defined fields
+        const productAttributes = {};
+        attributes.forEach((attr) => {
+          if (product[attr] !== undefined && product[attr] !== null) {
+            productAttributes[attr] = product[attr];
+          }
+        });
+
+        return {
+          id: product._id || product.id,
+          name: product.name,
+          price: product.price,
+          formattedPrice: product.price ? `₱${parseFloat(product.price).toFixed(2)}` : null,
+          image: product.image || "https://via.placeholder.com/100",
+          altImage: product.altImage || "https://placehold.co/600x400/000000/FFF",
+          attributes: productAttributes,
+          description: product.description || `Premium ${selectedCategory} product.`,
+          inStock: product.quantity > 0 ? true : false,
+          category: product.category?.toLowerCase() || fetchCategory, // Normalize category
+        };
+      });
+      console.log(`Mapped Products for ${selectedCategory}:`, mappedProducts);
 
       setAvailableProducts(mappedProducts);
       controls.start("visible");
@@ -128,7 +270,6 @@ const ComparePage = () => {
       console.error(`Error fetching ${selectedCategory}:`, error);
       setError(error.message);
     } finally {
-      // Set a timeout to simulate loading like in KeyboardPage
       setTimeout(() => {
         setLoading(false);
         setLoadingDelay(false);
@@ -185,7 +326,7 @@ const ComparePage = () => {
 
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
-    setSearchQuery(""); // Clear search on category change
+    setSearchQuery("");
   };
 
   const clearComparison = () => {
@@ -232,16 +373,26 @@ const ComparePage = () => {
     );
   };
 
+  // Helper function to get display label for an attribute
+  const getDisplayLabel = (category, attribute) => {
+    const label = schemaAttributes[category]?.displayLabels?.[attribute];
+    if (label) return label;
+    // Fallback: capitalize first letter and replace camelCase or underscores
+    return attribute
+      .replace(/([A-Z])/g, " $1")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .trim();
+  };
+
   // Check for incomplete products
   const hasIncompleteProducts = comparedProducts.some((product) => {
     if (!product.formattedPrice || !product.description) return true;
     if (!product.attributes) return true;
-    return categoryAttributes[selectedCategory].some(
-      (attr) => !product.attributes[attr]
-    );
+    return categoryAttributes.some((attr) => !product.attributes[attr]);
   });
 
-  // Memoize products to stabilize rendering - like in KeyboardPage
+  // Memoize products to stabilize rendering
   const memoizedProducts = useMemo(() => {
     console.log(`Rendering ${selectedCategory}:`, availableProducts);
     return availableProducts;
@@ -275,7 +426,7 @@ const ComparePage = () => {
           <option value="keycaps">Key Caps</option>
           <option value="switches">Switches</option>
           <option value="keyboards">Keyboards</option>
-          <option value="accessories">Accessories</option>
+          <option value="others">Others</option>
         </Select>
 
         <InputGroup maxW={{ base: "100%", md: "300px" }} ml={{ base: 0, md: 4 }}>
@@ -432,12 +583,12 @@ const ComparePage = () => {
                           endColor="gray.300"
                         />
                       </Box>
-                      <Skeleton 
-                        height="30px" 
-                        width="100%" 
+                      <Skeleton
+                        height="30px"
+                        width="100%"
                         mt={2}
                         startColor="gray.200"
-                        endColor="gray.300" 
+                        endColor="gray.300"
                       />
                     </Box>
                   ))}
@@ -455,7 +606,6 @@ const ComparePage = () => {
             <Heading as="h2" size="md" mb={4} color="gray.700">
               Select Products to Compare
             </Heading>
-            
             <Grid
               templateColumns={{
                 base: "repeat(1, 1fr)",
@@ -471,8 +621,6 @@ const ComparePage = () => {
                     <ProductBox
                       item={product}
                       index={index}
-                      category={selectedCategory}
-                      controls={controls}
                     />
                     <Box position="absolute" top={2} right={2}>
                       {!product.inStock && (
@@ -484,7 +632,7 @@ const ComparePage = () => {
                     {(!product.attributes ||
                       !product.formattedPrice ||
                       !product.description ||
-                      categoryAttributes[selectedCategory].some(
+                      categoryAttributes.some(
                         (attr) => !product.attributes?.[attr]
                       )) && (
                       <Badge
@@ -627,19 +775,35 @@ const ComparePage = () => {
                 ))}
               </Tr>
               <Tr>
+                <Td fontWeight="bold">Category</Td>
+                {comparedProducts.map((product) => (
+                  <Td key={product.id}>{product.category}</Td>
+                ))}
+              </Tr>
+              <Tr>
                 <Td fontWeight="bold">Description</Td>
                 {comparedProducts.map((product) => (
                   <Td key={product.id}>{displayProductInfo(product, "description")}</Td>
                 ))}
               </Tr>
-              {categoryAttributes[selectedCategory]?.map((attribute) => (
-                <Tr key={attribute}>
-                  <Td fontWeight="bold">{attribute}</Td>
-                  {comparedProducts.map((product) => (
-                    <Td key={product.id}>{displayAttributeInfo(product, attribute)}</Td>
-                  ))}
+              {categoryAttributes.length > 0 ? (
+                categoryAttributes.map((attribute) => (
+                  <Tr key={attribute}>
+                    <Td fontWeight="bold">{getDisplayLabel(selectedCategory, attribute)}</Td>
+                    {comparedProducts.map((product) => (
+                      <Td key={product.id}>{displayAttributeInfo(product, attribute)}</Td>
+                    ))}
+                  </Tr>
+                ))
+              ) : (
+                <Tr>
+                  <Td colSpan={comparedProducts.length + 1}>
+                    <Text color="gray.500" fontStyle="italic" textAlign="center">
+                      No attributes available for this category
+                    </Text>
+                  </Td>
                 </Tr>
-              ))}
+              )}
             </Tbody>
           </Table>
         </Box>

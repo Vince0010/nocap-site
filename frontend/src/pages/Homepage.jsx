@@ -32,19 +32,25 @@ const HomePage = () => {
         // Fetch data for each category
         const [keyboardsRes, switchesRes, keycapsRes, othersRes] =
           await Promise.all([
-            fetch("/api/keyboards"),
-            fetch("/api/switches"),
-            fetch("/api/keycaps"), 
-            fetch("/api/others"),
+            fetch("http://localhost:5000/api/keyboards"),
+            fetch("http://localhost:5000/api/switches"),
+            fetch("http://localhost:5000/api/keycaps"),
+            fetch("http://localhost:5000/api/others"),
           ]);
 
+        // Check response status
         if (
           !keyboardsRes.ok ||
           !switchesRes.ok ||
           !keycapsRes.ok ||
           !othersRes.ok
         ) {
-          throw new Error("Failed to fetch products");
+          const errors = [];
+          if (!keyboardsRes.ok) errors.push(`Keyboards: ${keyboardsRes.status}`);
+          if (!switchesRes.ok) errors.push(`Switches: ${switchesRes.status}`);
+          if (!keycapsRes.ok) errors.push(`Keycaps: ${keycapsRes.status}`);
+          if (!othersRes.ok) errors.push(`Others: ${othersRes.status}`);
+          throw new Error(`Failed to fetch products: ${errors.join(", ")}`);
         }
 
         const [keyboards, switches, keycaps, others] = await Promise.all([
@@ -54,33 +60,149 @@ const HomePage = () => {
           othersRes.json(),
         ]);
 
-        // Map data to sections
-        setData({
-          featuredImages: [
-            { ...keycaps[1], category: "keycaps" }, 
-            { ...keyboards[4], category: "keyboards" },
-            { ...keyboards[3], category: "keyboards" }, 
-            { ...keycaps[2], category: "keycaps"  }, 
-          ],
-          newArrivals: [
-            { ...keyboards[2], category: "keyboards" }, 
-            { ...keyboards[0], category: "keyboards" }, 
-            { ...switches[0], category: "switches" },  
-            { ...others[0], category: "others" }, 
-            { ...keyboards[1], category: "keyboards" }, 
-          ],
-          bestSellers: keyboards
-            .slice(0, 5)
-            .map((item) => ({ ...item, category: "keyboards" })), // Use keyboards for consistency
-          switches: switches .slice(0, 5) .map((item) => ({ ...item, category: "switches" })),
+        console.log("Raw API Data:", { keyboards, switches, keycaps, others });
+
+        // Handle single object or array
+        const normalizeArray = (data) => (Array.isArray(data) ? data : [data]);
+
+        // Validate data
+        const validateProduct = (product, category) => {
+          if (!product || !(product._id || product.id)) return false;
+          if (typeof product.name !== "string" || !product.name.trim()) return false;
+          if (product.image && (typeof product.image !== "string" || product.image === "null")) return false;
+          if (product.altImage && (typeof product.altImage !== "string" || product.altImage === "null")) return false;
+          if (product.highlight && typeof product.highlight !== "boolean") return false;
+          if (category === "others") {
+            return (
+              typeof product.description === "string" &&
+              product.description.trim() &&
+              typeof product.price === "number" &&
+              product.price >= 0 &&
+              typeof product.quantity === "number" &&
+              typeof product.category === "string" &&
+              product.category.trim()
+            );
+          }
+          return true; // Relaxed validation for keyboards, switches, keycaps
+        };
+
+        const keyboardsArray = normalizeArray(keyboards).filter((item) =>
+          validateProduct(item, "keyboards")
+        );
+        const switchesArray = normalizeArray(switches).filter((item) =>
+          validateProduct(item, "switches")
+        );
+        const keycapsArray = normalizeArray(keycaps).filter((item) =>
+          validateProduct(item, "keycaps")
+        );
+        const othersArray = normalizeArray(others).filter((item) =>
+          validateProduct(item, "others")
+        );
+
+        console.log("Valid Data:", {
+          keyboards: keyboardsArray,
+          switches: switchesArray,
+          keycaps: keycapsArray,
+          others: othersArray,
         });
 
-        console.log("Fetched data:", { keyboards, switches, keycaps, others });
+        // Log invalid entries
+        if (keyboardsArray.length < normalizeArray(keyboards).length) {
+          console.warn(
+            "Invalid keyboards entries filtered out:",
+            normalizeArray(keyboards).filter((item) => !keyboardsArray.includes(item))
+          );
+        }
+        if (switchesArray.length < normalizeArray(switches).length) {
+          console.warn(
+            "Invalid switches entries filtered out:",
+            normalizeArray(switches).filter((item) => !switchesArray.includes(item))
+          );
+        }
+        if (keycapsArray.length < normalizeArray(keycaps).length) {
+          console.warn(
+            "Invalid keycaps entries filtered out:",
+            normalizeArray(keycaps).filter((item) => !keycapsArray.includes(item))
+          );
+        }
+        if (othersArray.length < normalizeArray(others).length) {
+          console.warn(
+            "Invalid others entries filtered out:",
+            normalizeArray(others).filter((item) => !othersArray.includes(item))
+          );
+        }
+
+        // Map data to consistent structure with category included
+        const mapProduct = (product, category) => {
+          const mapped = {
+            id: product._id || product.id,
+            name: product.name,
+            price: product.price,
+            formattedPrice: product.price ? `₱${parseFloat(product.price).toFixed(2)}` : null,
+            image: product.image || "https://via.placeholder.com/100",
+            altImage:
+              product.altImage && typeof product.altImage === "string" && product.altImage !== "null"
+                ? product.altImage
+                : "https://placehold.co/600x400/000000/FFF",
+            description: product.description || `Premium ${category} product.`,
+            inStock: product.quantity > 0 ? true : false,
+            category: category.toLowerCase(), // Normalize category
+            highlight: product.highlight === true,
+          };
+          console.log(`Mapped product ${product.name}: image=${product.image}, altImage=${product.altImage || 'placeholder'}, highlight=${mapped.highlight}`);
+          return mapped;
+        };
+
+        const mappedKeyboards = keyboardsArray.map((item) => mapProduct(item, "keyboards"));
+        const mappedSwitches = switchesArray.map((item) => mapProduct(item, "switches"));
+        const mappedKeycaps = keycapsArray.map((item) => mapProduct(item, "keycaps"));
+        const mappedOthers = othersArray.map((item) => mapProduct(item, "others"));
+
+        console.log("Mapped Data:", {
+          keyboards: mappedKeyboards,
+          switches: mappedSwitches,
+          keycaps: mappedKeycaps,
+          others: mappedOthers,
+        });
+
+        // Combine all products and filter for highlights
+        const allProducts = [
+          ...mappedKeyboards,
+          ...mappedSwitches,
+          ...mappedKeycaps,
+          ...mappedOthers,
+        ];
+        const highlightedProducts = allProducts
+          .filter((product) => product.highlight === true)
+          .sort((a, b) => (b.id > a.id ? 1 : -1))
+          .slice(0, 4);
+        console.log("Highlighted Products:", highlightedProducts);
+        console.log("Top 4 Featured Highlights:", highlightedProducts.slice(0, 4));
+
+        // Ensure sufficient data for hardcoded indices
+        const safeGet = (array, index, fallback = null) =>
+          array.length > index ? array[index] : fallback;
+
+        // Map data to sections - each product already has its category
+        setData({
+          featuredImages: highlightedProducts,
+          newArrivals: [
+            safeGet(mappedKeyboards, 2, null),
+            safeGet(mappedKeyboards, 0, null),
+            safeGet(mappedSwitches, 0, null),
+            safeGet(mappedOthers, 0, null),
+            safeGet(mappedKeyboards, 1, null),
+          ].filter((item) => item !== null),
+          bestSellers: mappedKeyboards.slice(0, 5),
+          switches: mappedSwitches.slice(0, 5),
+        });
       } catch (error) {
         console.error("Error fetching homepage data:", error);
         setError(error.message);
       } finally {
-        setLoading(false);
+        setTimeout(() => {
+          setLoading(false);
+        }, 500); // Mimic ComparePage delay
       }
     };
 
@@ -89,7 +211,7 @@ const HomePage = () => {
 
   if (error) {
     return (
-      <Box bg="black" px={{ base: 4, md: 8 }} py={8} h="calc(100vh - 120px)">
+      <Box bg="gray.30" px={{ base: 4, md: 8 }} py={8} h="calc(100vh - 120px)">
         <Text color="red.500" textAlign="center">
           Error: {error}
         </Text>
@@ -113,102 +235,131 @@ const HomePage = () => {
         width="100%"
       >
         {/* Featured Highlights - Images with overlay text */}
-        <VStack align="center" spacing={8} mb={12} width="100%">
-          <Text fontSize="4xl" fontWeight="bold" color="black">
-            Featured Highlights
-          </Text>
-          <Center width="100%">
-            {loading ? (
-              <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={8} width="100%">
-                {[...Array(4)].map((_, index) => (
-                  <Skeleton key={index} height="300px" width="100%" />
-                ))}
-              </SimpleGrid>
-            ) : (
-              <SimpleGrid
-                columns={{ base: 1, sm: 2 }}
-                spacing={8}
-                width="100%"
-                justifyContent="center"
-              >
-                {data.featuredImages.map((item, index) => (
-                  <Center key={index} width="100%">
-                    <Box
-                      bg="white"
-                      borderRadius="xl"
-                      overflow="hidden"
-                      boxShadow="lg"
-                      width="100%"
-                      position="relative"
-                    >
+        {data.featuredImages.length > 0 && (
+          <VStack align="center" spacing={8} mb={12} width="100%">
+            <Text fontSize="4xl" fontWeight="bold" color="black">
+              Featured Highlights
+            </Text>
+            <Center width="100%">
+              {loading ? (
+                <SimpleGrid columns={{ base: 1, sm: 2, md: 2 }} spacing={8} width="100%">
+                  {[...Array(4)].map((_, index) => (
+                    <Skeleton key={index} height="300px" width="100%" />
+                  ))}
+                </SimpleGrid>
+              ) : (
+                <SimpleGrid
+                  columns={{ base: 1, sm: 2, md: 2 }}
+                  spacing={8}
+                  width="100%"
+                  justifyContent="center"
+                >
+                  {data.featuredImages.map((item, index) => (
+                    <Center key={index} width="100%">
                       <Box
+                        bg="white"
+                        borderRadius="xl"
+                        overflow="hidden"
+                        boxShadow="lg"
                         width="100%"
-                        height="0"
-                        paddingBottom="75%"
                         position="relative"
                       >
-                        <Box
-                          position="absolute"
-                          top="0"
-                          left="0"
+                        <Flex
                           width="100%"
-                          height="100%"
-                          overflow="hidden"
+                          height="0"
+                          paddingBottom="75%"
+                          position="relative"
                         >
-                          <MotionImg
-                            src={item.image}
-                            alt={item.name}
-                            style={{
-                              position: "absolute",
-                              top: "0",
-                              left: "0",
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              borderRadius: "0.75rem",
-                              transformOrigin: "center",
-                            }}
-                            whileHover={{ scale: 1.04 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
-                          />
-                        </Box>
-                        <Box
-                          position="absolute"
-                          top="0"
-                          left="0"
-                          height="100%"
-                          width="100%"
-                          background="rgba(0, 0, 0, 0.3)"
-                          borderRadius="0.75rem"
-                          pointerEvents="none"
-                        >
+                          {/* Main Image */}
                           <Box
                             position="absolute"
-                            bottom="15%"
-                            width="100%"
-                            textAlign="center"
-                            p={4}
+                            top="0"
+                            left="0"
+                            width="50%"
+                            height="100%"
+                            overflow="hidden"
                           >
-                            <Text
-                              fontSize="2xl"
-                              fontWeight="0.75rem"
-                              color="white"
-                            >
-                              {item.name}
-                            </Text>
-                            <Text fontSize="xl" color="white">
-                              ₱{parseFloat(item.price).toFixed(2)}
-                            </Text>
+                            <MotionImg
+                              src={item.image}
+                              alt={`${item.name} main image`}
+                              style={{
+                                position: "absolute",
+                                top: "0",
+                                left: "0",
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                borderRadius: "0.75rem",
+                                transformOrigin: "center",
+                              }}
+                              whileHover={{ scale: 1.04 }}
+                              transition={{ duration: 0.3, ease: "easeOut" }}
+                            />
                           </Box>
-                        </Box>
+                          {/* Alternate Image */}
+                          <Box
+                            position="absolute"
+                            top="0"
+                            right="0"
+                            width="50%"
+                            height="100%"
+                            overflow="hidden"
+                          >
+                            <MotionImg
+                              src={item.altImage}
+                              alt={`${item.name} alternate image`}
+                              style={{
+                                position: "absolute",
+                                top: "0",
+                                left:"0",
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                borderRadius: "0.75rem",
+                                transformOrigin: "center",
+                              }}
+                              whileHover={{ scale: 1.04 }}
+                              transition={{ duration: 0.3, ease: "easeOut" }}
+                            />
+                          </Box>
+                          <Box
+                            position="absolute"
+                            top="0"
+                            left="0"
+                            height="100%"
+                            width="100%"
+                            background="rgba(0, 0, 0, 0.3)"
+                            borderRadius="0.75rem"
+                            pointerEvents="none"
+                          >
+                            <Box
+                              position="absolute"
+                              bottom="15%"
+                              width="100%"
+                              textAlign="center"
+                              p={4}
+                            >
+                              <Text
+                                fontSize="2xl"
+                                fontWeight="0.75rem"
+                                color="white"
+                              >
+                                {item.name}
+                              </Text>
+                              <Text fontSize="xl" color="white">
+                                {item.formattedPrice}
+                              </Text>
+                            </Box>
+                          </Box>
+                        </Flex>
                       </Box>
-                    </Box>
-                  </Center>
-                ))}
-              </SimpleGrid>
-            )}
-          </Center>
-        </VStack>
+                    </Center>
+                  ))}
+                </SimpleGrid>
+              )}
+            </Center>
+          </VStack>
+        )}
 
         {/* Animated Product Rows */}
         {loading ? (
@@ -231,17 +382,14 @@ const HomePage = () => {
             <AnimatedProductRow
               title="New Arrivals"
               items={data.newArrivals}
-              category={[data.newArrivals[0].category|| data.newArrivals[1].category]}
             />
             <AnimatedProductRow
               title="Best Sellers"
               items={data.bestSellers}
-              category="keyboards"
             />
             <AnimatedProductRow
               title="Switches"
               items={data.switches}
-              category="switches"
             />
           </>
         )}

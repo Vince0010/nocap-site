@@ -15,7 +15,7 @@ import {
   Container,
 } from '@chakra-ui/react';
 
-const VALID_CATEGORIES = ['keyboards', 'switches', 'keycaps', 'others'];
+const VALID_CATEGORIES = ['keyboard', 'switches', 'keycaps', 'others'];
 
 const schemaAttributes = {
   switches: {
@@ -75,11 +75,11 @@ const ProductDetailPage = () => {
       const data = await response.json();
       console.log('Fetched product:', data);
 
-      // Normalize and process product data
+
       const processedProduct = {
         ...data,
         id: data._id || data.id,
-        category: data.category?.toLowerCase() || category, // Normalize category
+        category: data.category?.toLowerCase() || category, 
         image:
           typeof data.image === 'string' && data.image.trim() && data.image !== 'null'
             ? data.image
@@ -110,7 +110,7 @@ const ProductDetailPage = () => {
     fetchProduct();
   }, [category, id]);
 
-  // Function to handle image click and set it as the main displayed image
+  
   const handleImageClick = (imageSrc) => {
     setSelectedImage(imageSrc);
     window.scrollTo({
@@ -119,7 +119,7 @@ const ProductDetailPage = () => {
     });
   };
 
-  // Function to get specifications based on category
+
   const getSpecifications = (product, category) => {
     const attributes = schemaAttributes[category]?.attributes || [];
     const specs = [];
@@ -142,7 +142,7 @@ const ProductDetailPage = () => {
       });
     });
 
-    // Add generic specs if none are defined
+
     if (specs.length === 0) {
       specs.push(
         { label: 'Category', value: category.charAt(0).toUpperCase() + category.slice(1) },
@@ -186,40 +186,55 @@ const ProductDetailPage = () => {
     );
   }
 
-  // Create product images array based on available images
   const productImages = [];
+  const allProductImages = []; 
+  
   if (product.image !== placeholder) {
     productImages.push(product.image);
+    allProductImages.push(product.image);
   }
   if (
     product.altImage !== placeholder &&
     product.altImage !== product.image
   ) {
     productImages.push(product.altImage);
+    allProductImages.push(product.altImage);
   }
-  // If no valid images, use a single placeholder
+  
+  const productRenders = [];
+  
+  for (let i = 1; i <= 6; i++) {
+    const renderField = `imageRender${i}`;
+    if (
+      product[renderField] &&
+      typeof product[renderField] === 'string' &&
+      product[renderField].trim() &&
+      product[renderField] !== 'null'
+    ) {
+      productRenders.push(product[renderField]);
+      
+      if (!productImages.includes(product[renderField])) {
+        productImages.push(product[renderField]);
+      }
+      
+      if (!allProductImages.includes(product[renderField])) {
+        allProductImages.push(product[renderField]);
+      }
+    }
+  }
+
   if (productImages.length === 0) {
     productImages.push(placeholder);
   }
+
+  if (allProductImages.length === 0) {
+    allProductImages.push(placeholder);
+  }
+  
   console.log('Product images count:', productImages.length);
+  console.log('All product images count:', allProductImages.length);
 
-  // Create full-sized renders array based on available images
-  const fullSizeRenders = [];
-  if (product.image !== placeholder) {
-    fullSizeRenders.push(product.image);
-  }
-  if (
-    product.altImage !== placeholder &&
-    product.altImage !== product.image
-  ) {
-    fullSizeRenders.push(product.altImage);
-  }
-  // If no valid images, use a single placeholder
-  if (fullSizeRenders.length === 0) {
-    fullSizeRenders.push(placeholder);
-  }
 
-  // Get specifications
   const specifications = getSpecifications(product, category);
 
   return (
@@ -247,11 +262,12 @@ const ProductDetailPage = () => {
 
             {/* Image grid below main image */}
             <Box mt={6}>
-              <Text fontWeight="medium" mb={3}>Product Images</Text>
+              <Text fontWeight="medium" mb={3}>Product Images & Renders</Text>
               <Grid
                 templateColumns="repeat(auto-fit, minmax(100px, 1fr))"
                 gridAutoRows="100px"
                 gap={3}
+                maxWidth="500px"
               >
                 {productImages.map((img, index) => (
                   <Box
@@ -334,41 +350,43 @@ const ProductDetailPage = () => {
         </Flex>
       </Box>
 
-      {/* Full-sized renders section */}
-      <Box bg="#f5f5f5" py={9} mt={10}>
-        <Container maxW="1200px">
-          <Heading size="md" textAlign="center" mb={8}>
-            Product Renders
-          </Heading>
+      {/* Product Renders section */}
+      {allProductImages.length > 0 && (
+        <Box bg="#f5f5f5" py={9} mt={10}>
+          <Container maxW="1200px">
+            <Heading size="md" textAlign="center" mb={8}>
+              Product Gallery
+            </Heading>
 
-          <VStack spacing={12}>
-            {fullSizeRenders.map((img, index) => (
-              <Box
-                key={index}
-                width="100%"
-                boxShadow="sm"
-                bg="#f5f5f5"
-                p={4}
-                borderRadius="lg"
-              >
-                <Image
-                  src={img}
-                  alt={
-                    img === placeholder
-                      ? `${product.name} placeholder`
-                      : `${product.name} full render ${index + 1}`
-                  }
-                  objectFit="contain"
-                  w="100%"
-                  h={{ base: '300px', md: '600px' }}
-                  borderRadius="md"
-                  fallbackSrc={placeholder}
-                />
-              </Box>
-            ))}
-          </VStack>
-        </Container>
-      </Box>
+            <VStack spacing={12}>
+              {allProductImages.map((img, index) => (
+                <Box
+                  key={index}
+                  width="100%"
+                  boxShadow="sm"
+                  bg="#f5f5f5"
+                  p={4}
+                  borderRadius="lg"
+                >
+                  <Image
+                    src={img}
+                    alt={
+                      img === placeholder
+                        ? `${product.name} placeholder`
+                        : `${product.name} view ${index + 1}`
+                    }
+                    objectFit="contain"
+                    w="100%"
+                    h={{ base: '300px', md: '600px' }}
+                    borderRadius="md"
+                    fallbackSrc={placeholder}
+                  />
+                </Box>
+              ))}
+            </VStack>
+          </Container>
+        </Box>
+      )}
     </Box>
   );
 };

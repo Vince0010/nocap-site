@@ -89,7 +89,7 @@ const schemaAttributes = {
       stemType: "Stem Type",
     },
   },
-  keyboards: {
+  keyboard: {
     attributes: [
       "releaseYear",
       "switchOptions",
@@ -425,7 +425,7 @@ const ComparePage = () => {
         >
           <option value="keycaps">Key Caps</option>
           <option value="switches">Switches</option>
-          <option value="keyboards">Keyboards</option>
+          <option value="keyboard">Keyboards</option>
           <option value="others">Others</option>
         </Select>
 

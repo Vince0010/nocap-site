@@ -12,7 +12,7 @@ import ResultPage from './pages/ResultPage.jsx';
 
 const navItems = [
   { label: 'Home', href: '/' },
-  { label: 'Keyboards', href: '/keyboards' },
+  { label: 'Keyboards', href: '/keyboard' },
   { label: 'Switches', href: '/switches' },
   { label: 'Key Caps', href: '/keycaps' },
   { label: 'Others', href: '/others' },
@@ -32,7 +32,7 @@ function App() {
       <Box>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/keyboards" element={<KeyboardPage/>} />
+          <Route path="/keyboard" element={<KeyboardPage/>} />
           <Route path="/switches" element={<SwitchesPage />} />
           <Route path="/keycaps" element={<KeyCapsPage />} />
           <Route path="/others" element={<OthersPage />} />

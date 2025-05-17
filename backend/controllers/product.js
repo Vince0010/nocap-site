@@ -6,7 +6,7 @@ import Other from "..//models/products/others.js";
 
 // Map category names to Mongoose models
 const categories = {
-  keyboards: Keyboard,
+  keyboard: Keyboard,
   switches: Switch,
   keycaps: Keycap,
   others: Other,

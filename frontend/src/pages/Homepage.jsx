@@ -30,9 +30,9 @@ const HomePage = () => {
       setError(null);
       try {
         // Fetch data for each category
-        const [keyboardsRes, switchesRes, keycapsRes, othersRes] =
+        const [keyboardRes, switchesRes, keycapsRes, othersRes] =
           await Promise.all([
-            fetch("http://localhost:5000/api/keyboards"),
+            fetch("http://localhost:5000/api/keyboard"),
             fetch("http://localhost:5000/api/switches"),
             fetch("http://localhost:5000/api/keycaps"),
             fetch("http://localhost:5000/api/others"),
@@ -40,27 +40,27 @@ const HomePage = () => {
 
         // Check response status
         if (
-          !keyboardsRes.ok ||
+          !keyboardRes.ok ||
           !switchesRes.ok ||
           !keycapsRes.ok ||
           !othersRes.ok
         ) {
           const errors = [];
-          if (!keyboardsRes.ok) errors.push(`Keyboards: ${keyboardsRes.status}`);
+          if (!keyboardRes.ok) errors.push(`Keyboards: ${keyboardRes.status}`);
           if (!switchesRes.ok) errors.push(`Switches: ${switchesRes.status}`);
           if (!keycapsRes.ok) errors.push(`Keycaps: ${keycapsRes.status}`);
           if (!othersRes.ok) errors.push(`Others: ${othersRes.status}`);
           throw new Error(`Failed to fetch products: ${errors.join(", ")}`);
         }
 
-        const [keyboards, switches, keycaps, others] = await Promise.all([
-          keyboardsRes.json(),
+        const [keyboard, switches, keycaps, others] = await Promise.all([
+          keyboardRes.json(),
           switchesRes.json(),
           keycapsRes.json(),
           othersRes.json(),
         ]);
 
-        console.log("Raw API Data:", { keyboards, switches, keycaps, others });
+        console.log("Raw API Data:", { keyboard, switches, keycaps, others });
 
         // Handle single object or array
         const normalizeArray = (data) => (Array.isArray(data) ? data : [data]);
@@ -86,8 +86,8 @@ const HomePage = () => {
           return true; // Relaxed validation for keyboards, switches, keycaps
         };
 
-        const keyboardsArray = normalizeArray(keyboards).filter((item) =>
-          validateProduct(item, "keyboards")
+        const keyboardsArray = normalizeArray(keyboard).filter((item) =>
+          validateProduct(item, "keyboard")
         );
         const switchesArray = normalizeArray(switches).filter((item) =>
           validateProduct(item, "switches")
@@ -100,17 +100,17 @@ const HomePage = () => {
         );
 
         console.log("Valid Data:", {
-          keyboards: keyboardsArray,
+          keyboard: keyboardsArray,
           switches: switchesArray,
           keycaps: keycapsArray,
           others: othersArray,
         });
 
         // Log invalid entries
-        if (keyboardsArray.length < normalizeArray(keyboards).length) {
+        if (keyboardsArray.length < normalizeArray(keyboard).length) {
           console.warn(
             "Invalid keyboards entries filtered out:",
-            normalizeArray(keyboards).filter((item) => !keyboardsArray.includes(item))
+            normalizeArray(keyboard).filter((item) => !keyboardsArray.includes(item))
           );
         }
         if (switchesArray.length < normalizeArray(switches).length) {
@@ -153,31 +153,33 @@ const HomePage = () => {
           return mapped;
         };
 
-        const mappedKeyboards = keyboardsArray.map((item) => mapProduct(item, "keyboards"));
+        const mappedKeyboards = keyboardsArray.map((item) => mapProduct(item, "keyboard"));
         const mappedSwitches = switchesArray.map((item) => mapProduct(item, "switches"));
         const mappedKeycaps = keycapsArray.map((item) => mapProduct(item, "keycaps"));
         const mappedOthers = othersArray.map((item) => mapProduct(item, "others"));
 
         console.log("Mapped Data:", {
-          keyboards: mappedKeyboards,
+          keyboard: mappedKeyboards,
           switches: mappedSwitches,
           keycaps: mappedKeycaps,
           others: mappedOthers,
         });
 
-        // Combine all products and filter for highlights
+        // Combine all products
         const allProducts = [
           ...mappedKeyboards,
           ...mappedSwitches,
           ...mappedKeycaps,
           ...mappedOthers,
         ];
-        const highlightedProducts = allProducts
-          .filter((product) => product.highlight === true)
-          .sort((a, b) => (b.id > a.id ? 1 : -1))
-          .slice(0, 4);
-        console.log("Highlighted Products:", highlightedProducts);
-        console.log("Top 4 Featured Highlights:", highlightedProducts.slice(0, 4));
+
+        // MODIFIED: Get all highlighted products first
+        const highlightedProducts = allProducts.filter((product) => product.highlight === true);
+        console.log(`Found ${highlightedProducts.length} highlighted products`);
+        
+        // Take only the first 4 highlighted products for the Featured Highlights section
+        const featuredHighlights = highlightedProducts.slice(0, 4);
+        console.log("Featured Highlights:", featuredHighlights);
 
         // Ensure sufficient data for hardcoded indices
         const safeGet = (array, index, fallback = null) =>
@@ -185,7 +187,7 @@ const HomePage = () => {
 
         // Map data to sections - each product already has its category
         setData({
-          featuredImages: highlightedProducts,
+          featuredImages: featuredHighlights,
           newArrivals: [
             safeGet(mappedKeyboards, 2, null),
             safeGet(mappedKeyboards, 0, null),
@@ -235,7 +237,7 @@ const HomePage = () => {
         width="100%"
       >
         {/* Featured Highlights - Images with overlay text */}
-        {data.featuredImages.length > 0 && (
+        {data.featuredImages.length > 0 ? (
           <VStack align="center" spacing={8} mb={12} width="100%">
             <Text fontSize="4xl" fontWeight="bold" color="black">
               Featured Highlights
@@ -255,7 +257,7 @@ const HomePage = () => {
                   justifyContent="center"
                 >
                   {data.featuredImages.map((item, index) => (
-                    <Center key={index} width="100%">
+                    <Center key={item.id || index} width="100%">
                       <Box
                         bg="white"
                         borderRadius="xl"
@@ -359,6 +361,17 @@ const HomePage = () => {
               )}
             </Center>
           </VStack>
+        ) : (
+          loading ? null : (
+            <VStack align="center" spacing={4} mb={12} width="100%">
+              <Text fontSize="4xl" fontWeight="bold" color="black">
+                Featured Highlights
+              </Text>
+              <Text color="gray.500">
+                No highlighted products found. Mark products as highlighted in your database to display them here.
+              </Text>
+            </VStack>
+          )
         )}
 
         {/* Animated Product Rows */}

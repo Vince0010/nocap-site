@@ -42,7 +42,7 @@ const KeyboardPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const url = "http://localhost:5000/api/keyboards";
+      const url = "http://localhost:5000/api/keyboard";
       console.log("Fetching from URL:", url);
       const response = await fetch(url);
 
@@ -61,12 +61,12 @@ const KeyboardPage = () => {
       let keyboardArray;
       if (Array.isArray(data)) {
         keyboardArray = data.filter(
-          (product) => product.category?.toLowerCase() === "keyboards"
+          (product) => product.category?.toLowerCase() === "keyboard"
         );
       } else if (data && typeof data === "object") {
         console.log("Received single object, wrapping in array");
         keyboardArray =
-          data.category?.toLowerCase() === "keyboards" ? [data] : [];
+          data.category?.toLowerCase() === "keyboard" ? [data] : [];
       } else {
         console.error("Unexpected data format:", data);
         keyboardArray = [];
@@ -97,7 +97,7 @@ const KeyboardPage = () => {
         return {
           ...keyboard,
           id: keyboard._id || keyboard.id,
-          category: keyboard.category?.toLowerCase() || "keyboards", // Normalize category
+          category: keyboard.category?.toLowerCase() || "keyboard", // Normalize category
           brand:
             typeof keyboard.brand === "string" && keyboard.brand.trim()
               ? keyboard.brand

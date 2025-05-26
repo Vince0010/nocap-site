@@ -35,16 +35,24 @@ const KeyCapsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 100);
-  const [loadingDelay, setLoadingDelay] = useState(false);
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300); // Increased debounce time
+  const [dataReady, setDataReady] = useState(false); // New state for data readiness
 
   const fetchKeycaps = async () => {
     setLoading(true);
     setError(null);
+    setDataReady(false); // Reset data readiness
+
     try {
       const url = "http://localhost:5000/api/keycaps";
       console.log("Fetching from URL:", url);
-      const response = await fetch(url);
+
+      // Add timeout for slow networks
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const text = await response.text();
@@ -86,30 +94,29 @@ const KeyCapsPage = () => {
           (!keycap.image ||
             (typeof keycap.image === "string" &&
               keycap.image.trim() &&
-              keycap.image !== "null"))
-              &&(!keycap.altimage ||
-                (typeof keycap.altimage === "string" &&
-                  keycap.altimage.trim() &&
-                  keycap.altimage !== "null"))
-      
+              keycap.image !== "null")) &&
+          (!keycap.altImage ||
+            (typeof keycap.altImage === "string" &&
+              keycap.altImage.trim() &&
+              keycap.altImage !== "null"))
       );
       console.log("Valid Data:", validData);
 
       // Process data
       const processedData = validData.map((keycap) => {
         if (!keycap.brand || !keycap.brand.trim()) {
-          console.log(`Assigned Unknown brand to keyboard: ${keycap.name || keycap._id}`);
+          console.log(`Assigned Unknown brand to keycap: ${keycap.name || keycap._id}`);
         }
         return {
           ...keycap,
           id: keycap._id || keycap.id,
-          category: keycap.category?.toLowerCase() || "keyboards", // Normalize category
+          category: keycap.category?.toLowerCase() || "keycaps",
           brand:
             typeof keycap.brand === "string" && keycap.brand.trim()
               ? keycap.brand
               : "Unknown",
-              image: keycap.image || "https://via.placeholder.com/100",
-              altImage: keycap.altImage || "https://placehold.co/600x400/000000/FFF",// Normalize category
+          image: keycap.image || "https://via.placeholder.com/100",
+          altImage: keycap.altImage || "https://placehold.co/600x400/000000/FFF",
           availability: keycap.quantity > 0 ? "in-stock" : "out-of-stock",
         };
       });
@@ -118,35 +125,36 @@ const KeyCapsPage = () => {
       if (processedData.length === 0) {
         console.warn("No valid keycaps after processing");
       }
+
+      // Extract unique brands
       const uniqueBrands = [
-        ...new Set(processedData.map((keycaps) => keycaps.brand)),
+        ...new Set(processedData.map((keycap) => keycap.brand)),
       ].sort();
       console.log("Unique Brands:", uniqueBrands);
 
+      // Update state only if data is valid
       setKeycaps(processedData);
       setFilteredKeycaps(processedData);
       setBrandOptions(uniqueBrands);
+      setDataReady(true); // Mark data as ready
     } catch (error) {
       console.error("Error fetching keycaps:", error);
-      setError(error.message);
+      setError(
+        error.name === "AbortError"
+          ? "Request timed out. Please check your connection and try again."
+          : error.message
+      );
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setLoadingDelay(false);
-      }, 500);
-      setLoadingDelay(true);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchKeycaps();
-    console.log("Keycaps fetched on mount:", keycaps);
   }, []);
 
   useEffect(() => {
-    // Trigger loading state for filter/search changes
-    setLoading(true);
-    setLoadingDelay(true);
+    if (!dataReady) return; // Skip filtering until data is ready
 
     let filtered = [...keycaps];
 
@@ -156,11 +164,10 @@ const KeyCapsPage = () => {
         (keycap._id || keycap.id) &&
         keycap.name &&
         keycap.price !== undefined &&
-        // Avoid requiring image to be present
         (!keycap.image ||
-          (keycap.image && keycap.image.trim() && keycap.image !== "null"))
-          && (!keycap.altimage ||
-            (keycap.altimage && keycap.altimage.trim() && keycap.altimage !== "null"))
+          (keycap.image && keycap.image.trim() && keycap.image !== "null")) &&
+        (!keycap.altImage ||
+          (keycap.altImage && keycap.altImage.trim() && keycap.altImage !== "null"))
     );
 
     console.log("Initial Keycaps for Filtering:", filtered);
@@ -168,50 +175,43 @@ const KeyCapsPage = () => {
     if (minPrice && !isNaN(minPrice) && minPrice !== "") {
       const min = parseFloat(minPrice);
       filtered = filtered.filter((keycap) => keycap.price >= min);
-      console.log("After minPrice filter:", filtered);
     }
     if (maxPrice && !isNaN(maxPrice) && maxPrice !== "") {
       const max = parseFloat(maxPrice);
       filtered = filtered.filter((keycap) => keycap.price <= max);
-      console.log("After maxPrice filter:", filtered);
     }
     if (availability && availability !== "") {
       filtered = filtered.filter((keycap) => {
-        // Check for both the added availability field and the quantity field
         if (keycap.availability) {
           return keycap.availability === availability;
         } else {
-          // Fallback to determining availability from quantity
           return (
             (availability === "in-stock" && keycap.quantity > 0) ||
             (availability === "out-of-stock" && keycap.quantity <= 0)
           );
         }
       });
-      console.log("After availability filter:", filtered);
     }
     if (brand && brand !== "") {
       filtered = filtered.filter((keycap) => keycap.brand === brand);
-      console.log("After brand filter:", filtered);
     }
     if (debouncedSearchQuery.trim()) {
       const lowerCaseQuery = debouncedSearchQuery.toLowerCase().trim();
       filtered = filtered.filter((keycap) =>
         keycap.name?.toLowerCase().includes(lowerCaseQuery)
       );
-      console.log("After search filter:", filtered);
     }
 
     setFilteredKeycaps(filtered);
-
-    // Reset loading state after delay
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setLoadingDelay(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [minPrice, maxPrice, availability, brand, debouncedSearchQuery, keycaps]);
+  }, [
+    minPrice,
+    maxPrice,
+    availability,
+    brand,
+    debouncedSearchQuery,
+    keycaps,
+    dataReady,
+  ]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -341,7 +341,6 @@ const KeyCapsPage = () => {
             onChange={(e) => setAvailability(e.target.value)}
             size="sm"
             maxW="150px"
-            Chiche
             borderRadius="lg"
           >
             <option value="">All</option>
@@ -368,7 +367,7 @@ const KeyCapsPage = () => {
               <option key={brandOption} value={brandOption}>
                 {brandOption}
               </option>
-                ))}
+            ))}
           </Select>
         </Flex>
       </Flex>
@@ -405,7 +404,7 @@ const KeyCapsPage = () => {
               Retry
             </Button>
           </MotionBox>
-        ) : loading || loadingDelay ? (
+        ) : loading || !dataReady ? (
           <MotionBox
             key="loading"
             initial={{ opacity: 0 }}

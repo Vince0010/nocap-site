@@ -13,6 +13,7 @@ import { AnimatedProductRow } from "../components/ProductComponents";
 import { useState, useEffect } from "react";
 
 const MotionImg = motion.img;
+const MotionBox = motion(Box);
 
 const HomePage = () => {
   const [data, setData] = useState({
@@ -23,6 +24,7 @@ const HomePage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hoveredFeaturedItem, setHoveredFeaturedItem] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -236,7 +238,7 @@ const HomePage = () => {
         align="center"
         width="100%"
       >
-        {/* Featured Highlights - Images with overlay text */}
+        {/* Featured Highlights - Modified to use hover image switching like ProductComponents */}
         {data.featuredImages.length > 0 ? (
           <VStack align="center" spacing={8} mb={12} width="100%">
             <Text fontSize="4xl" fontWeight="bold" color="black">
@@ -258,13 +260,16 @@ const HomePage = () => {
                 >
                   {data.featuredImages.map((item, index) => (
                     <Center key={item.id || index} width="100%">
-                      <Box
+                      <MotionBox
                         bg="white"
                         borderRadius="xl"
                         overflow="hidden"
                         boxShadow="lg"
                         width="100%"
                         position="relative"
+                        onHoverStart={() => setHoveredFeaturedItem(item.id)}
+                        onHoverEnd={() => setHoveredFeaturedItem(null)}
+                        cursor="pointer"
                       >
                         <Flex
                           width="100%"
@@ -277,7 +282,7 @@ const HomePage = () => {
                             position="absolute"
                             top="0"
                             left="0"
-                            width="50%"
+                            width="100%"
                             height="100%"
                             overflow="hidden"
                           >
@@ -294,36 +299,47 @@ const HomePage = () => {
                                 borderRadius: "0.75rem",
                                 transformOrigin: "center",
                               }}
-                              whileHover={{ scale: 1.04 }}
-                              transition={{ duration: 0.3, ease: "easeOut" }}
-                            />
-                          </Box>
-                          {/* Alternate Image */}
-                          <Box
-                            position="absolute"
-                            top="0"
-                            right="0"
-                            width="50%"
-                            height="100%"
-                            overflow="hidden"
-                          >
-                            <MotionImg
-                              src={item.altImage}
-                              alt={`${item.name} alternate image`}
-                              style={{
-                                position: "absolute",
-                                top: "0",
-                                left:"0",
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                borderRadius: "0.75rem",
-                                transformOrigin: "center",
+                              animate={{
+                                opacity: hoveredFeaturedItem === item.id && item.altImage ? 0 : 1,
+                                scale: hoveredFeaturedItem === item.id ? 1.04 : 1,
                               }}
-                              whileHover={{ scale: 1.04 }}
                               transition={{ duration: 0.3, ease: "easeOut" }}
                             />
                           </Box>
+                          
+                          {/* Alternate Image */}
+                          {item.altImage && (
+                            <Box
+                              position="absolute"
+                              top="0"
+                              left="0"
+                              width="100%"
+                              height="100%"
+                              overflow="hidden"
+                            >
+                              <MotionImg
+                                src={item.altImage}
+                                alt={`${item.name} alternate image`}
+                                style={{
+                                  position: "absolute",
+                                  top: "0",
+                                  left: "0",
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                  borderRadius: "0.75rem",
+                                  transformOrigin: "center",
+                                }}
+                                animate={{
+                                  opacity: hoveredFeaturedItem === item.id ? 1 : 0,
+                                  scale: hoveredFeaturedItem === item.id ? 1.04 : 1,
+                                }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                              />
+                            </Box>
+                          )}
+                          
+                          {/* Text Overlay */}
                           <Box
                             position="absolute"
                             top="0"
@@ -354,7 +370,7 @@ const HomePage = () => {
                             </Box>
                           </Box>
                         </Flex>
-                      </Box>
+                      </MotionBox>
                     </Center>
                   ))}
                 </SimpleGrid>

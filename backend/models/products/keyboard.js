@@ -170,10 +170,6 @@ const keyboardSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    isHighlighted:{
-      type: Boolean,
-      required: false,
-    },
     category: {
       type: String,
       required: true,

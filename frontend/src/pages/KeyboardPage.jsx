@@ -35,16 +35,24 @@ const KeyboardPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 100);
-  const [loadingDelay, setLoadingDelay] = useState(false);
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300); // Increased debounce time for stability
+  const [dataReady, setDataReady] = useState(false); // New state to track if data is fully ready
 
   const fetchKeyboards = async () => {
     setLoading(true);
     setError(null);
+    setDataReady(false); // Reset data readiness
+
     try {
       const url = "http://localhost:5000/api/keyboard";
       console.log("Fetching from URL:", url);
-      const response = await fetch(url);
+
+      // Add timeout to handle slow networks
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const text = await response.text();
@@ -97,13 +105,13 @@ const KeyboardPage = () => {
         return {
           ...keyboard,
           id: keyboard._id || keyboard.id,
-          category: keyboard.category?.toLowerCase() || "keyboard", // Normalize category
+          category: keyboard.category?.toLowerCase() || "keyboard",
           brand:
             typeof keyboard.brand === "string" && keyboard.brand.trim()
               ? keyboard.brand
               : "Unknown",
-              image: keyboard.image || "https://via.placeholder.com/100",
-              altImage: keyboard.altImage || "https://placehold.co/600x400/000000/FFF",// Normalize category
+          image: keyboard.image || "https://via.placeholder.com/100",
+          altImage: keyboard.altImage || "https://placehold.co/600x400/000000/FFF",
           availability: keyboard.quantity > 0 ? "in-stock" : "out-of-stock",
         };
       });
@@ -119,30 +127,29 @@ const KeyboardPage = () => {
       ].sort();
       console.log("Unique Brands:", uniqueBrands);
 
+      // Only update state if data is valid
       setKeyboards(processedData);
       setFilteredKeyboards(processedData);
       setBrandOptions(uniqueBrands);
+      setDataReady(true); // Mark data as ready
     } catch (error) {
       console.error("Error fetching keyboards:", error);
-      setError(error.message);
+      setError(
+        error.name === "AbortError"
+          ? "Request timed out. Please check your connection and try again."
+          : error.message
+      );
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setLoadingDelay(false);
-      }, 500);
-      setLoadingDelay(true);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchKeyboards();
-    console.log("Keyboards fetched on mount:", keyboards);
   }, []);
 
   useEffect(() => {
-    // Trigger loading state for filter/search changes
-    setLoading(true);
-    setLoadingDelay(true);
+    if (!dataReady) return; // Skip filtering until data is ready
 
     let filtered = [...keyboards];
 
@@ -152,15 +159,14 @@ const KeyboardPage = () => {
         (keyboard._id || keyboard.id) &&
         keyboard.name &&
         keyboard.price !== undefined &&
-        // Avoid requiring image to be present
         (!keyboard.image ||
           (keyboard.image &&
             keyboard.image.trim() &&
-            keyboard.image !== "null"))
-            &&(!keyboard.altimage ||
-              (typeof keyboard.altimage === "string" &&
-                keyboard.altimage.trim() &&
-                keyboard.altimage !== "null"))
+            keyboard.image !== "null")) &&
+        (!keyboard.altImage ||
+          (typeof keyboard.altImage === "string" &&
+            keyboard.altImage.trim() &&
+            keyboard.altImage !== "null"))
     );
 
     console.log("Initial Keyboards for Filtering:", filtered);
@@ -168,49 +174,34 @@ const KeyboardPage = () => {
     if (minPrice && !isNaN(minPrice) && minPrice !== "") {
       const min = parseFloat(minPrice);
       filtered = filtered.filter((keyboard) => keyboard.price >= min);
-      console.log("After minPrice filter:", filtered);
     }
     if (maxPrice && !isNaN(maxPrice) && maxPrice !== "") {
       const max = parseFloat(maxPrice);
       filtered = filtered.filter((keyboard) => keyboard.price <= max);
-      console.log("After maxPrice filter:", filtered);
     }
     if (availability && availability !== "") {
       filtered = filtered.filter((keyboard) => {
-        // Check for both the added availability field and the quantity field
         if (keyboard.availability) {
           return keyboard.availability === availability;
         } else {
-          // Fallback to determining availability from quantity
           return (
             (availability === "in-stock" && keyboard.quantity > 0) ||
             (availability === "out-of-stock" && keyboard.quantity <= 0)
           );
         }
       });
-      console.log("After availability filter:", filtered);
     }
     if (brand && brand !== "") {
       filtered = filtered.filter((keyboard) => keyboard.brand === brand);
-      console.log("After brand filter:", filtered);
     }
     if (debouncedSearchQuery.trim()) {
       const lowerCaseQuery = debouncedSearchQuery.toLowerCase().trim();
       filtered = filtered.filter((keyboard) =>
         keyboard.name?.toLowerCase().includes(lowerCaseQuery)
       );
-      console.log("After search filter:", filtered);
     }
 
     setFilteredKeyboards(filtered);
-
-    // Reset loading state after delay
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setLoadingDelay(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
   }, [
     minPrice,
     maxPrice,
@@ -218,6 +209,7 @@ const KeyboardPage = () => {
     brand,
     debouncedSearchQuery,
     keyboards,
+    dataReady,
   ]);
 
   const handleSearch = (e) => {
@@ -411,7 +403,7 @@ const KeyboardPage = () => {
               Retry
             </Button>
           </MotionBox>
-        ) : loading || loadingDelay ? (
+        ) : loading || !dataReady ? (
           <MotionBox
             key="loading"
             initial={{ opacity: 0 }}
@@ -444,6 +436,7 @@ const KeyboardPage = () => {
                         minHeight="300px"
                       >
                         <Skeleton
+                         sd
                           width="100%"
                           height="0"
                           paddingBottom="100%"

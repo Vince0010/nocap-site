@@ -35,25 +35,30 @@ const OthersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 100);
-  const [loadingDelay, setLoadingDelay] = useState(false);
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300); // Increased debounce time
+  const [dataReady, setDataReady] = useState(false); // New state for data readiness
 
   const fetchOthers = async () => {
     setLoading(true);
     setError(null);
+    setDataReady(false); // Reset data readiness
+
     try {
       const url = "http://localhost:5000/api/others";
       console.log("Fetching from URL:", url);
-      const response = await fetch(url);
+
+      // Add timeout for slow networks
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const text = await response.text();
         console.error("Response Text:", text);
         throw new Error(
-          `Failed to fetch accessories: ${response.status} ${text.slice(
-            0,
-            100
-          )}`
+          `Failed to fetch accessories: ${response.status} ${text.slice(0, 100)}`
         );
       }
 
@@ -109,7 +114,7 @@ const OthersPage = () => {
       const processedData = validData.map((item) => {
         if (!item.brand || !item.brand.trim()) {
           console.log(
-            `Assigned Unknown brand to keyboard: ${item.name || item._id}`
+            `Assigned Unknown brand to accessory: ${item.name || item._id}`
           );
         }
         return {
@@ -121,7 +126,7 @@ const OthersPage = () => {
             typeof item.brand === "string" && item.brand.trim()
               ? item.brand
               : "Unknown",
-          category: item.category?.toLowerCase() || "others", // Normalize category
+          category: item.category?.toLowerCase() || "others",
           image:
             typeof item.image === "string" &&
             item.image.trim() &&
@@ -139,33 +144,36 @@ const OthersPage = () => {
       if (processedData.length === 0) {
         console.warn("No valid accessories after processing");
       }
-      const uniqueBrands = [
-        ...new Set(processedData.map((keyboard) => keyboard.brand)),
-      ].sort();
 
+      // Extract unique brands
+      const uniqueBrands = [
+        ...new Set(processedData.map((item) => item.brand)),
+      ].sort();
+      console.log("Unique Brands:", uniqueBrands);
+
+      // Update state only if data is valid
       setOthers(processedData);
       setFilteredOthers(processedData);
       setBrandOptions(uniqueBrands);
+      setDataReady(true); // Mark data as ready
     } catch (error) {
       console.error("Error fetching accessories:", error);
-      setError(error.message);
+      setError(
+        error.name === "AbortError"
+          ? "Request timed out. Please check your connection and try again."
+          : error.message
+      );
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setLoadingDelay(false);
-      }, 500);
-      setLoadingDelay(true);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchOthers();
-    console.log("Accessories fetched on mount:", others);
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    setLoadingDelay(true);
+    if (!dataReady) return; // Skip filtering until data is ready
 
     let filtered = [...others];
 
@@ -176,12 +184,10 @@ const OthersPage = () => {
     if (minPrice && !isNaN(minPrice) && minPrice !== "") {
       const min = parseFloat(minPrice);
       filtered = filtered.filter((item) => item.price >= min);
-      console.log("After minPrice filter:", filtered);
     }
     if (maxPrice && !isNaN(maxPrice) && maxPrice !== "") {
       const max = parseFloat(maxPrice);
       filtered = filtered.filter((item) => item.price <= max);
-      console.log("After maxPrice filter:", filtered);
     }
     if (availability && availability !== "") {
       filtered = filtered.filter((item) => {
@@ -194,29 +200,27 @@ const OthersPage = () => {
           );
         }
       });
-      console.log("After availability filter:", filtered);
     }
     if (brand && brand !== "") {
       filtered = filtered.filter((item) => item.brand === brand);
-      console.log("After brand filter:", filtered);
     }
     if (debouncedSearchQuery.trim()) {
       const lowerCaseQuery = debouncedSearchQuery.toLowerCase().trim();
       filtered = filtered.filter((item) =>
         item.name?.toLowerCase().includes(lowerCaseQuery)
       );
-      console.log("After search filter:", filtered);
     }
 
     setFilteredOthers(filtered);
-
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setLoadingDelay(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [minPrice, maxPrice, availability, brand, debouncedSearchQuery, others]);
+  }, [
+    minPrice,
+    maxPrice,
+    availability,
+    brand,
+    debouncedSearchQuery,
+    others,
+    dataReady,
+  ]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -409,7 +413,7 @@ const OthersPage = () => {
               Retry
             </Button>
           </MotionBox>
-        ) : loading || loadingDelay ? (
+        ) : loading || !dataReady ? (
           <MotionBox
             key="loading"
             initial={{ opacity: 0 }}

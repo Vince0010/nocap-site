@@ -35,16 +35,24 @@ const SwitchesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 100);
-  const [loadingDelay, setLoadingDelay] = useState(false);
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300); // Increased debounce time
+  const [dataReady, setDataReady] = useState(false); // New state for data readiness
 
   const fetchSwitches = async () => {
     setLoading(true);
     setError(null);
+    setDataReady(false); // Reset data readiness
+
     try {
       const url = "http://localhost:5000/api/switches";
       console.log("Fetching from URL:", url);
-      const response = await fetch(url);
+
+      // Add timeout for slow networks
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const text = await response.text();
@@ -87,7 +95,11 @@ const SwitchesPage = () => {
           (!switchItem.image ||
             (typeof switchItem.image === "string" &&
               switchItem.image.trim() &&
-              switchItem.image !== "null"))
+              switchItem.image !== "null")) &&
+          (!switchItem.altImage ||
+            (typeof switchItem.altImage === "string" &&
+              switchItem.altImage.trim() &&
+              switchItem.altImage !== "null"))
       );
       console.log("Valid Data:", validData);
 
@@ -95,15 +107,19 @@ const SwitchesPage = () => {
       const processedData = validData.map((switchItem) => {
         if (!switchItem.brand || !switchItem.brand.trim()) {
           console.log(
-            `Assigned Unknown brand to keyboard: ${
-              switchItem.name || switchItem._id
-            }`
+            `Assigned Unknown brand to switch: ${switchItem.name || switchItem._id}`
           );
         }
         return {
           ...switchItem,
           id: switchItem._id || switchItem.id,
-          category: switches.category?.toLowerCase() || "switches",
+          category: switchItem.category?.toLowerCase() || "switches",
+          brand:
+            typeof switchItem.brand === "string" && switchItem.brand.trim()
+              ? switchItem.brand
+              : "Unknown",
+          image: switchItem.image || "https://via.placeholder.com/100",
+          altImage: switchItem.altImage || "https://placehold.co/600x400/000000/FFF",
           availability: switchItem.quantity > 0 ? "in-stock" : "out-of-stock",
         };
       });
@@ -112,33 +128,36 @@ const SwitchesPage = () => {
       if (processedData.length === 0) {
         console.warn("No valid switches after processing");
       }
+
+      // Extract unique brands
       const uniqueBrands = [
-        ...new Set(processedData.map((keycaps) => keycaps.brand)),
+        ...new Set(processedData.map((switchItem) => switchItem.brand)),
       ].sort();
+      console.log("Unique Brands:", uniqueBrands);
+
+      // Update state only if data is valid
       setSwitches(processedData);
       setFilteredSwitches(processedData);
       setBrandOptions(uniqueBrands);
+      setDataReady(true); // Mark data as ready
     } catch (error) {
       console.error("Error fetching switches:", error);
-      setError(error.message);
+      setError(
+        error.name === "AbortError"
+          ? "Request timed out. Please check your connection and try again."
+          : error.message
+      );
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setLoadingDelay(false);
-      }, 500);
-      setLoadingDelay(true);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchSwitches();
-    console.log("Switches fetched on mount:", switches);
   }, []);
 
   useEffect(() => {
-    // Trigger loading state for filter/search changes
-    setLoading(true);
-    setLoadingDelay(true);
+    if (!dataReady) return; // Skip filtering until data is ready
 
     let filtered = [...switches];
 
@@ -148,11 +167,14 @@ const SwitchesPage = () => {
         (switchItem._id || switchItem.id) &&
         switchItem.name &&
         switchItem.price !== undefined &&
-        // Avoid requiring image to be present
         (!switchItem.image ||
           (switchItem.image &&
             switchItem.image.trim() &&
-            switchItem.image !== "null"))
+            switchItem.image !== "null")) &&
+        (!switchItem.altImage ||
+          (switchItem.altImage &&
+            switchItem.altImage.trim() &&
+            switchItem.altImage !== "null"))
     );
 
     console.log("Initial Switches for Filtering:", filtered);
@@ -160,50 +182,43 @@ const SwitchesPage = () => {
     if (minPrice && !isNaN(minPrice) && minPrice !== "") {
       const min = parseFloat(minPrice);
       filtered = filtered.filter((switchItem) => switchItem.price >= min);
-      console.log("After minPrice filter:", filtered);
     }
     if (maxPrice && !isNaN(maxPrice) && maxPrice !== "") {
       const max = parseFloat(maxPrice);
       filtered = filtered.filter((switchItem) => switchItem.price <= max);
-      console.log("After maxPrice filter:", filtered);
     }
     if (availability && availability !== "") {
       filtered = filtered.filter((switchItem) => {
-        // Check for both the added availability field and the quantity field
         if (switchItem.availability) {
           return switchItem.availability === availability;
         } else {
-          // Fallback to determining availability from quantity
           return (
             (availability === "in-stock" && switchItem.quantity > 0) ||
             (availability === "out-of-stock" && switchItem.quantity <= 0)
           );
         }
       });
-      console.log("After availability filter:", filtered);
     }
     if (brand && brand !== "") {
       filtered = filtered.filter((switchItem) => switchItem.brand === brand);
-      console.log("After brand filter:", filtered);
     }
     if (debouncedSearchQuery.trim()) {
       const lowerCaseQuery = debouncedSearchQuery.toLowerCase().trim();
       filtered = filtered.filter((switchItem) =>
         switchItem.name?.toLowerCase().includes(lowerCaseQuery)
       );
-      console.log("After search filter:", filtered);
     }
 
     setFilteredSwitches(filtered);
-
-    // Reset loading state after delay
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setLoadingDelay(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [minPrice, maxPrice, availability, brand, debouncedSearchQuery, switches]);
+  }, [
+    minPrice,
+    maxPrice,
+    availability,
+    brand,
+    debouncedSearchQuery,
+    switches,
+    dataReady,
+  ]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -396,7 +411,7 @@ const SwitchesPage = () => {
               Retry
             </Button>
           </MotionBox>
-        ) : loading || loadingDelay ? (
+        ) : loading || !dataReady ? (
           <MotionBox
             key="loading"
             initial={{ opacity: 0 }}
